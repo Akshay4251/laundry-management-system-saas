@@ -248,54 +248,59 @@ const CTA = () => {
             ))}
           </motion.div>
 
-          {/* Social Proof / Stats */}
+          {/* Social Proof / Stats - WITH ADDED TOP AND BOTTOM SPACING */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.5 }}
-            className="mt-8 sm:mt-10 md:mt-12 mb-8 sm:mb-10 md:mb-12 bg-gradient-to-r from-blue-50 via-cyan-50 to-purple-50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 border border-gray-200"
+            className="mt-12 sm:mt-16 md:mt-20 lg:mt-24 mb-12 sm:mb-16 md:mb-20 lg:mb-24 bg-gradient-to-r from-blue-50 via-cyan-50 to-purple-50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-12 border border-gray-200 shadow-lg"
           >
-            <div className="grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 text-center">
-              <div>
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8 text-center max-w-4xl mx-auto">
+              {/* Stat 1: 10min */}
+              <div className="flex flex-col items-center justify-center">
                 <motion.div
                   initial={{ scale: 0 }}
                   whileInView={{ scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.6, type: "spring", stiffness: 200 }}
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-1 sm:mb-2"
+                  className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent leading-none mb-1.5 sm:mb-2"
                 >
                   10min
                 </motion.div>
-                <p className="text-gray-600 font-semibold text-[10px] sm:text-xs md:text-sm uppercase tracking-wide leading-tight">
-                  Average Setup<span className="hidden sm:inline"> Time</span>
+                <p className="text-gray-600 font-semibold text-[9px] xs:text-[10px] sm:text-xs md:text-sm uppercase tracking-wide leading-tight px-1">
+                  Average<br className="sm:hidden" /> Setup<span className="hidden sm:inline"> Time</span>
                 </p>
               </div>
-              <div>
+
+              {/* Stat 2: 24/7 */}
+              <div className="flex flex-col items-center justify-center">
                 <motion.div
                   initial={{ scale: 0 }}
                   whileInView={{ scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.7, type: "spring", stiffness: 200 }}
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-1 sm:mb-2"
+                  className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent leading-none mb-1.5 sm:mb-2"
                 >
                   24/7
                 </motion.div>
-                <p className="text-gray-600 font-semibold text-[10px] sm:text-xs md:text-sm uppercase tracking-wide leading-tight">
+                <p className="text-gray-600 font-semibold text-[9px] xs:text-[10px] sm:text-xs md:text-sm uppercase tracking-wide leading-tight px-1">
                   Support<span className="hidden sm:inline"> Available</span>
                 </p>
               </div>
-              <div>
+
+              {/* Stat 3: 99.9% */}
+              <div className="flex flex-col items-center justify-center">
                 <motion.div
                   initial={{ scale: 0 }}
                   whileInView={{ scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-1 sm:mb-2"
+                  className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent leading-none mb-1.5 sm:mb-2"
                 >
                   99.9%
                 </motion.div>
-                <p className="text-gray-600 font-semibold text-[10px] sm:text-xs md:text-sm uppercase tracking-wide leading-tight">
+                <p className="text-gray-600 font-semibold text-[9px] xs:text-[10px] sm:text-xs md:text-sm uppercase tracking-wide leading-tight px-1">
                   Uptime<span className="hidden sm:inline"> Guarantee</span>
                 </p>
               </div>

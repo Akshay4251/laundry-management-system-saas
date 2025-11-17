@@ -1,147 +1,146 @@
 import RegisterForm from "@/components/auth/register-form";
 import Link from "next/link";
-import { Sparkles, CheckCircle2, Shield, Zap } from "lucide-react";
+import { 
+  Sparkles, 
+  Shield, 
+  CheckCircle2, 
+  ArrowRight,
+  Zap,
+  Award
+} from "lucide-react";
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 relative overflow-hidden">
+      
+      {/* Subtle Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-blue-200 to-purple-200 rounded-full blur-3xl opacity-20"></div>
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-br from-purple-200 to-pink-200 rounded-full blur-3xl opacity-20"></div>
       </div>
 
-      {/* Left Side - Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative z-10 py-12">
-        <div className="max-w-md w-full">
-          {/* Glass Card */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 md:p-10">
-            {/* Logo */}
-            <div className="text-center mb-8">
-              <Link href="/" className="inline-flex items-center space-x-3 group">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                  <div className="relative bg-gradient-to-br from-blue-600 to-cyan-600 p-3 rounded-2xl">
-                    <Sparkles className="h-8 w-8 text-white" />
-                  </div>
-                </div>
-                <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  LaundryPro
-                </span>
-              </Link>
-            </div>
-
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Start your free trial
-              </h2>
-              <p className="text-gray-600">
-                No credit card required. Setup in 5 minutes.
-              </p>
-            </div>
-
-            {/* Register Form */}
-            <RegisterForm />
-
-            {/* Login Link */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Already have an account?{" "}
-                <Link
-                  href="/login"
-                  className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  Sign in →
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="mt-8 flex items-center justify-center space-x-6 text-xs text-gray-600">
-            <div className="flex items-center space-x-1">
-              <Shield className="w-4 h-4 text-green-600" />
-              <span>SSL Secure</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <CheckCircle2 className="w-4 h-4 text-blue-600" />
-              <span>GDPR Compliant</span>
-            </div>
+      {/* Top Navigation */}
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-2.5 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                LaundryPro
+              </span>
+            </Link>
+            
+            <Link href="/login" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">
+              Sign in →
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Benefits */}
-      <div className="hidden lg:flex lg:flex-1 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-cyan-600 to-blue-700">
-          {/* Pattern Overlay */}
-          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+      {/* Main Content - REDUCED TOP PADDING */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 lg:pt-10 pb-12 lg:pb-20">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           
-          {/* Content */}
-          <div className="relative h-full flex flex-col items-center justify-center p-12 text-white">
-            <div className="max-w-md space-y-8">
-              {/* Main Heading */}
-              <div>
-                <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-                  <Zap className="w-4 h-4" />
-                  <span className="text-sm font-medium">Join 2,000+ Happy Businesses</span>
+          {/* Left - Content - MOVED UP */}
+          <div className="text-center lg:text-left lg:-mt-12">
+            <div className="inline-flex items-center gap-2 bg-blue-100 px-4 py-2 rounded-full mb-6">
+              <Zap className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-semibold text-blue-700">14-Day Free Trial</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
+              Start Growing{" "}
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Today
+              </span>
+            </h1>
+            
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              Join 2,000+ successful businesses using LaundryPro to streamline operations and increase revenue.
+            </p>
+
+            {/* Quick Features */}
+            <div className="space-y-3 mb-8">
+              {[
+                "5-minute quick setup",
+                "No credit card required",
+                "24/7 priority support",
+              ].map((feature, idx) => (
+                <div key={idx} className="flex items-center gap-3 text-gray-700">
+                  <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="w-3 h-3 text-green-600" strokeWidth={3} />
+                  </div>
+                  <span className="font-medium">{feature}</span>
                 </div>
-                <h1 className="text-4xl font-bold mb-4 leading-tight">
-                  Everything You Need to Scale Your Laundry Business
-                </h1>
-                <p className="text-lg text-blue-100">
-                  Start your 14-day free trial. No credit card required.
+              ))}
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-gray-200">
+              {[
+                { icon: Shield, text: "SSL Secure" },
+                { icon: CheckCircle2, text: "GDPR Compliant" },
+                { icon: Award, text: "ISO Certified" },
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-gray-600">
+                  <item.icon className="w-5 h-5 text-blue-600" strokeWidth={2.5} />
+                  <span className="text-sm font-medium">{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right - Registration Form */}
+          <div>
+            <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 sm:p-10">
+              
+              {/* Form Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Create your account
+                </h2>
+                <p className="text-gray-600">
+                  Get started in less than 5 minutes
                 </p>
               </div>
 
-              {/* Benefits */}
-              <div className="space-y-4">
-                {[
-                  "✅ Setup in 5 minutes",
-                  "✅ No credit card required",
-                  "✅ Cancel anytime",
-                  "✅ 24/7 customer support",
-                  "✅ Free training & onboarding",
-                  "✅ Mobile apps included",
-                ].map((benefit, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center space-x-3 text-lg"
-                  >
-                    <span>{benefit}</span>
-                  </div>
-                ))}
+              {/* Registration Form */}
+              <RegisterForm />
+
+              {/* Divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-3 bg-white text-gray-500">
+                    Already have an account?
+                  </span>
+                </div>
               </div>
 
-              {/* Testimonial */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                <div className="flex items-center space-x-1 mb-3">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <svg
-                      key={star}
-                      className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-sm text-blue-100 italic mb-3">
-                  "LaundryPro helped us grow from 50 to 200 orders per day in just 3 months. The ROI was incredible!"
-                </p>
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold">
-                    RK
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Rajesh Kumar</p>
-                    <p className="text-xs text-blue-100">CEO, Fresh Laundry</p>
-                  </div>
-                </div>
-              </div>
+              {/* Login Link */}
+              <Link
+                href="/login"
+                className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all group"
+              >
+                Sign in to your account
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+
+              {/* Terms */}
+              <p className="mt-6 text-center text-xs text-gray-500">
+                By signing up, you agree to our{" "}
+                <Link href="/terms" className="text-blue-600 hover:underline">
+                  Terms
+                </Link>
+                {" "}and{" "}
+                <Link href="/privacy" className="text-blue-600 hover:underline">
+                  Privacy Policy
+                </Link>
+              </p>
             </div>
           </div>
         </div>

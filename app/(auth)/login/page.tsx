@@ -1,153 +1,142 @@
 import LoginForm from "@/components/auth/login-form";
 import Link from "next/link";
-import { Sparkles, Shield, Zap, Users } from "lucide-react";
+import { 
+  Sparkles, 
+  Shield, 
+  CheckCircle2, 
+  ArrowRight,
+  Zap,
+  Award,
+  TrendingUp,
+  BarChart3,
+  Users
+} from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 relative overflow-hidden">
+      
+      {/* Subtle Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-blue-200 to-purple-200 rounded-full blur-3xl opacity-20"></div>
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-br from-purple-200 to-pink-200 rounded-full blur-3xl opacity-20"></div>
       </div>
 
-      {/* Left Side - Form */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="max-w-md w-full">
-          {/* Glass Card */}
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 md:p-10">
-            {/* Logo */}
-            <div className="text-center mb-8">
-              <Link href="/" className="inline-flex items-center space-x-3 group">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                  <div className="relative bg-gradient-to-br from-blue-600 to-cyan-600 p-3 rounded-2xl">
-                    <Sparkles className="h-8 w-8 text-white" />
-                  </div>
+      {/* Top Navigation */}
+      <div className="relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-2.5 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow">
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                LaundryPro
+              </span>
+            </Link>
+            
+            <Link href="/register" className="text-sm font-semibold text-gray-700 hover:text-blue-600 transition-colors">
+              Create account →
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - SWAPPED LAYOUT */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 lg:pt-10 pb-12 lg:pb-20">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          
+          {/* Left - Login Form (SWAPPED TO LEFT) */}
+          <div className="order-2 lg:order-1">
+            <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 sm:p-10">
+              
+              {/* Form Header */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-full mb-6 border border-blue-100">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Welcome Back
+                  </span>
                 </div>
-                <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  LaundryPro
-                </span>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Sign in to your account
+                </h2>
+                <p className="text-gray-600">
+                  Access your dashboard and manage operations
+                </p>
+              </div>
+
+              {/* Login Form */}
+              <LoginForm />
+
+              {/* Divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-3 bg-white text-gray-500">
+                    Don't have an account?
+                  </span>
+                </div>
+              </div>
+
+              {/* Register Link */}
+              <Link
+                href="/register"
+                className="flex items-center justify-center w-full px-4 py-3 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all group"
+              >
+                Start your free trial
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-            </div>
 
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome back!
-              </h2>
-              <p className="text-gray-600">
-                Sign in to continue to your dashboard
-              </p>
-            </div>
-
-            {/* Login Form */}
-            <LoginForm />
-
-            {/* Register Link */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{" "}
-                <Link
-                  href="/register"
-                  className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  Start your free trial →
+              {/* Terms */}
+              <p className="mt-6 text-center text-xs text-gray-500">
+                Protected by reCAPTCHA. See{" "}
+                <Link href="/privacy" className="text-blue-600 hover:underline">
+                  Privacy
+                </Link>
+                {" "}and{" "}
+                <Link href="/terms" className="text-blue-600 hover:underline">
+                  Terms
                 </Link>
               </p>
             </div>
           </div>
 
-          {/* Trust Indicators */}
-          <div className="mt-8 flex items-center justify-center space-x-6 text-xs text-gray-600">
-            <div className="flex items-center space-x-1">
-              <Shield className="w-4 h-4 text-green-600" />
-              <span>Secure Login</span>
+          {/* Right - Content (SWAPPED TO RIGHT) */}
+          <div className="text-center lg:text-left order-1 lg:order-2 lg:-mt-12">
+            <div className="inline-flex items-center gap-2 bg-purple-100 px-4 py-2 rounded-full mb-6">
+              <TrendingUp className="w-4 h-4 text-purple-600" />
+              <span className="text-sm font-semibold text-purple-700">2,000+ Active Users</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Users className="w-4 h-4 text-blue-600" />
-              <span>2000+ Users</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Right Side - Branding */}
-      <div className="hidden lg:flex lg:flex-1 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-cyan-600 to-blue-700">
-          {/* Pattern Overlay */}
-          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-          
-          {/* Content */}
-          <div className="relative h-full flex flex-col items-center justify-center p-12 text-white">
-            <div className="max-w-md space-y-8">
-              {/* Main Heading */}
-              <div>
-                <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-                  <Zap className="w-4 h-4" />
-                  <span className="text-sm font-medium">Trusted by 2,000+ businesses</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
+              Welcome Back to{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                LaundryPro
+              </span>
+            </h1>
+            
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              Continue managing your laundry business with powerful analytics, streamlined operations, and happy customers.
+            </p>
+
+            {/* Key Benefits */}
+            <div className="space-y-3">
+              {[
+                "Real-time order tracking & analytics",
+                "Automated SMS & email notifications",
+                "Multi-location management support",
+              ].map((benefit, idx) => (
+                <div key={idx} className="flex items-center gap-3 text-gray-700">
+                  <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="w-3 h-3 text-blue-600" strokeWidth={3} />
+                  </div>
+                  <span className="font-medium">{benefit}</span>
                 </div>
-                <h1 className="text-4xl font-bold mb-4 leading-tight">
-                  Manage Your Laundry Business Like Never Before
-                </h1>
-                <p className="text-lg text-blue-100">
-                  Join thousands of laundry businesses using LaundryPro to streamline
-                  operations and grow revenue.
-                </p>
-              </div>
-
-              {/* Features */}
-              <div className="space-y-4">
-                {[
-                  {
-                    icon: "📊",
-                    title: "Real-time Analytics",
-                    description: "Track performance with live dashboards"
-                  },
-                  {
-                    icon: "🚚",
-                    title: "Smart Route Optimization",
-                    description: "Save time and fuel costs automatically"
-                  },
-                  {
-                    icon: "📱",
-                    title: "Mobile Apps",
-                    description: "For customers, drivers, and staff"
-                  },
-                  {
-                    icon: "💳",
-                    title: "Seamless Payments",
-                    description: "Accept all payment methods easily"
-                  },
-                ].map((feature, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start space-x-4 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/20 transition-all"
-                  >
-                    <div className="text-3xl">{feature.icon}</div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{feature.title}</h3>
-                      <p className="text-blue-100 text-sm">{feature.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-8 border-t border-white/20">
-                {[
-                  { value: "98%", label: "Satisfaction" },
-                  { value: "500K+", label: "Orders" },
-                  { value: "25+", label: "Countries" },
-                ].map((stat, index) => (
-                  <div key={index} className="text-center">
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <div className="text-sm text-blue-100">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>

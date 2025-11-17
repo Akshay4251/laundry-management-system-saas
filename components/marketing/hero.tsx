@@ -14,7 +14,7 @@ const Hero = () => {
   ];
 
   return (
-    <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
+    <section id="home" className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 -z-10">
         {/* Gradient Orbs */}
