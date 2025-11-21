@@ -98,7 +98,6 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   );
 }
 
-// Helper to get status dot for minimal displays
 export function StatusDot({ status }: { status: OrderStatus }) {
   const config = statusConfig[status];
   return (

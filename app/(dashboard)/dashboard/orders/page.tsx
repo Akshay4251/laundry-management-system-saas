@@ -114,10 +114,8 @@ export default function OrdersPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  // Get status from URL params
   const urlStatus = searchParams.get('status') as OrderStatus | null;
   
-  // State
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>(urlStatus || 'all');
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -125,10 +123,8 @@ export default function OrdersPage() {
     to: undefined,
   });
 
-  // Filtered Orders
   const filteredOrders = useMemo(() => {
     return MOCK_ORDERS.filter((order) => {
-      // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesSearch =
@@ -138,12 +134,10 @@ export default function OrdersPage() {
         if (!matchesSearch) return false;
       }
 
-      // Status filter
       if (statusFilter !== 'all' && order.status !== statusFilter) {
         return false;
       }
 
-      // Date range filter
       if (dateRange.from && order.orderDate < dateRange.from) {
         return false;
       }
@@ -155,7 +149,6 @@ export default function OrdersPage() {
     });
   }, [searchQuery, statusFilter, dateRange]);
 
-  // Stats
   const stats = useMemo(() => {
     const filtered = statusFilter === 'all' ? MOCK_ORDERS : filteredOrders;
     return {
@@ -166,7 +159,6 @@ export default function OrdersPage() {
     };
   }, [statusFilter, filteredOrders]);
 
-  // Handlers
   const handleReset = () => {
     setSearchQuery('');
     setStatusFilter('all');
@@ -176,13 +168,11 @@ export default function OrdersPage() {
 
   const handleExport = () => {
     console.log('Exporting orders...', filteredOrders);
-    // TODO: Implement CSV export
     alert('Export functionality will be implemented');
   };
 
   const handleRefresh = () => {
     console.log('Refreshing orders...');
-    // TODO: Refetch from API
     alert('Orders refreshed');
   };
 
@@ -195,7 +185,6 @@ export default function OrdersPage() {
   };
 
   const handleDelete = (orderId: string) => {
-    // TODO: Implement delete with confirmation
     if (confirm('Are you sure you want to delete this order?')) {
       console.log('Deleting order:', orderId);
       alert('Delete functionality will be implemented');
@@ -203,17 +192,17 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">All Orders</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">All Orders</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Manage and track all your laundry orders
           </p>
         </div>
         <Link href="/dashboard/create-order">
-          <Button size="default" className="gap-2">
+          <Button size="default" className="gap-2 w-full sm:w-auto">
             <Plus className="w-4 h-4" />
             Create Order
           </Button>
@@ -221,20 +210,20 @@ export default function OrdersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-lg border border-slate-200 p-5"
+          className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Total Orders</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalOrders}</p>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">Total Orders</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{stats.totalOrders}</p>
             </div>
-            <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
           </div>
         </motion.div>
@@ -243,18 +232,18 @@ export default function OrdersPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white rounded-lg border border-slate-200 p-5"
+          className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5"
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-500">Total Revenue</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1 flex items-center gap-1">
-                <IndianRupee className="w-5 h-5" />
-                {stats.totalRevenue.toLocaleString('en-IN')}
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-slate-500">Total Revenue</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 flex items-center gap-0.5 sm:gap-1">
+                <IndianRupee className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span className="truncate">{stats.totalRevenue.toLocaleString('en-IN')}</span>
               </p>
             </div>
-            <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center">
-              <IndianRupee className="w-6 h-6 text-green-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+              <IndianRupee className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
             </div>
           </div>
         </motion.div>
@@ -263,15 +252,15 @@ export default function OrdersPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white rounded-lg border border-slate-200 p-5"
+          className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Pending Orders</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{stats.pendingOrders}</p>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">Pending</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{stats.pendingOrders}</p>
             </div>
-            <div className="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center">
-              <Clock className="w-6 h-6 text-amber-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
             </div>
           </div>
         </motion.div>
@@ -280,15 +269,15 @@ export default function OrdersPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white rounded-lg border border-slate-200 p-5"
+          className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">Completed</p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{stats.completedOrders}</p>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">Completed</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{stats.completedOrders}</p>
             </div>
-            <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
             </div>
           </div>
         </motion.div>
@@ -299,7 +288,7 @@ export default function OrdersPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="bg-white rounded-lg border border-slate-200 p-5"
+        className="bg-white rounded-lg border border-slate-200 p-4 sm:p-5"
       >
         <OrderFilters
           searchQuery={searchQuery}
@@ -314,7 +303,7 @@ export default function OrdersPage() {
         />
       </motion.div>
 
-      {/* Orders Table */}
+      {/* Orders Table/Cards */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -330,12 +319,11 @@ export default function OrdersPage() {
 
       {/* Results Info */}
       {filteredOrders.length > 0 && (
-        <div className="flex items-center justify-between text-sm text-slate-500 px-2">
+        <div className="flex items-center justify-between text-xs sm:text-sm text-slate-500 px-2">
           <p>
             Showing <span className="font-semibold text-slate-700">{filteredOrders.length}</span> of{' '}
             <span className="font-semibold text-slate-700">{MOCK_ORDERS.length}</span> orders
           </p>
-          {/* TODO: Add pagination here */}
         </div>
       )}
     </div>
