@@ -23,47 +23,48 @@ interface StatusConfig {
   dotColor: string;
 }
 
+// ✨ Improved: Softer, more professional colors
 const statusConfig: Record<OrderStatus, StatusConfig> = {
   pending: {
     label: 'Pending',
     icon: Clock,
-    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    className: 'bg-amber-50 text-amber-700 border-amber-200/60',
     dotColor: 'bg-amber-500',
   },
   processing: {
     label: 'In Progress',
     icon: Loader,
-    className: 'bg-blue-50 text-blue-700 border-blue-200',
+    className: 'bg-blue-50 text-blue-700 border-blue-200/60',
     dotColor: 'bg-blue-500',
   },
   ready: {
     label: 'Ready',
     icon: CheckCircle,
-    className: 'bg-green-50 text-green-700 border-green-200',
+    className: 'bg-green-50 text-green-700 border-green-200/60',
     dotColor: 'bg-green-500',
   },
   pickup: {
     label: 'Pickup',
     icon: PackageCheck,
-    className: 'bg-purple-50 text-purple-700 border-purple-200',
+    className: 'bg-purple-50 text-purple-700 border-purple-200/60',
     dotColor: 'bg-purple-500',
   },
   delivery: {
     label: 'Out for Delivery',
     icon: Truck,
-    className: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    className: 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
     dotColor: 'bg-indigo-500',
   },
   completed: {
     label: 'Completed',
     icon: CheckCircle2,
-    className: 'bg-slate-100 text-slate-700 border-slate-300',
+    className: 'bg-slate-50 text-slate-600 border-slate-200/60',
     dotColor: 'bg-slate-500',
   },
   cancelled: {
     label: 'Cancelled',
     icon: XCircle,
-    className: 'bg-red-50 text-red-700 border-red-200',
+    className: 'bg-red-50 text-red-700 border-red-200/60',
     dotColor: 'bg-red-500',
   },
 };
@@ -87,7 +88,7 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center font-semibold rounded-md border transition-all',
+        'inline-flex items-center font-semibold rounded-lg border transition-all',
         config.className,
         sizeClasses[size]
       )}
