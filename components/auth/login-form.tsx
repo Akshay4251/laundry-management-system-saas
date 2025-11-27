@@ -113,7 +113,7 @@ const LoginForm = () => {
             htmlFor="remember-me"
             className="ml-2 block text-sm text-gray-700 cursor-pointer"
           >
-            Remember me for 30 days
+            Remember me 
           </label>
         </div>
 

@@ -2,13 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   UserCircle,
   Package,
-  ShoppingBag,
   Calendar,
   Receipt,
   BarChart3,
@@ -29,7 +28,7 @@ import {
   ListChecks,
   IndianRupee,
   CheckCircle,
-  PackageCheck
+  Factory
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -58,62 +57,52 @@ const menuSections: MenuSection[] = [
     items: [
       { 
         icon: Clock, 
-        label: 'Pending', 
-        href: '/dashboard/orders?status=pending',
+        label: 'New Orders', 
+        href: '/orders?status=new',
         badge: '5' 
       },
       { 
         icon: Loader, 
-        label: 'In Progress', 
-        href: '/dashboard/orders?status=processing',
+        label: 'In-Progress', 
+        href: '/orders?status=processing',
         badge: '2' 
+      },
+      { 
+        icon: Factory, 
+        label: 'At Workshop', 
+        href: '/orders?status=workshop' 
       },
       { 
         icon: CheckCircle, 
         label: 'Ready', 
-        href: '/dashboard/orders?status=ready' 
-      },
-      { 
-        icon: PackageCheck, 
-        label: 'Pickup', 
-        href: '/dashboard/orders?status=pickup' 
+        href: '/orders?status=ready' 
       },
       { 
         icon: Truck, 
         label: 'Out for Delivery', 
-        href: '/dashboard/orders?status=delivery' 
+        href: '/orders?status=delivery' 
       },
       { 
         icon: ListChecks, 
         label: 'All Orders', 
-        href: '/dashboard/orders' 
+        href: '/orders' 
       },
     ],
   },
   {
     title: 'Business Management',
     items: [
-      { icon: UserCircle, label: 'Customers', href: '/dashboard/customers' },
-      { icon: ClipboardList, label: 'Inventory', href: '/dashboard/inventory' },
-      { icon: Package, label: 'Service Items', href: '/dashboard/services' },
-      { icon: IndianRupee, label: 'Expenses', href: '/dashboard/expenses' },
-      { icon: Calendar, label: 'Calendar', href: '/dashboard/calendar' },
-      {
-        icon: BarChart3,
-        label: 'Reports',
-        children: [
-          { icon: FileText, label: 'Booking Reports', href: '/dashboard/reports/booking' },
-          { icon: TrendingUp, label: 'Income Report', href: '/dashboard/reports/income' },
-          { icon: TrendingDown, label: 'Expense Report', href: '/dashboard/reports/expense' },
-          { icon: PieChart, label: 'Profit & Loss', href: '/dashboard/reports/profit-loss' },
-        ],
-      },
+      { icon: UserCircle, label: 'Customers', href: '/customers' },
+      { icon: ClipboardList, label: 'Inventory', href: '/inventory' },
+      { icon: Package, label: 'Services', href: '/services' },
+      { icon: IndianRupee, label: 'Expenses', href: '/expenses' },
+      { icon: Calendar, label: 'Calendar', href: '/calendar' },
     ],
   },
   {
     title: 'System',
     items: [
-      { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+      { icon: Settings, label: 'Settings', href: '/settings' },
     ],
   },
 ];
@@ -133,13 +122,41 @@ export function Sidebar({
 }: SidebarProps) {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  // ✅ FIX: Default closed state (Empty Array)
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [isScrolling, setIsScrolling] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isCollapsed = isMobile ? false : (externalCollapsed ?? internalCollapsed);
+
+  // Helper function to check if a menu item is active
+  const isMenuItemActive = (href: string) => {
+    if (!href) return false;
+
+    // Parse the href to get pathname and query params
+    const [hrefPath, hrefQuery] = href.split('?');
+    
+    // Check if pathname matches
+    if (pathname !== hrefPath) return false;
+    
+    // If no query params in href, it's active only if current URL also has no params
+    if (!hrefQuery) {
+      return searchParams.toString() === '';
+    }
+    
+    // Parse query params from href
+    const hrefParams = new URLSearchParams(hrefQuery);
+    
+    // Check if all href params match current search params
+    for (const [key, value] of hrefParams.entries()) {
+      if (searchParams.get(key) !== value) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
 
   const handleToggle = () => {
     if (isMobile) return;
@@ -175,13 +192,12 @@ export function Sidebar({
       transition={{ duration: 0.3, ease: 'easeInOut' }}
       className={cn(
         "bg-white border-r border-slate-200 h-full flex flex-col",
-        // ✅ FIX: Force hidden on large screens if it's the mobile instance
         isMobile ? "relative w-full lg:hidden" : "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] hidden lg:flex"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Mobile Header Logo (Only visible on Mobile) */}
+      {/* Mobile Header Logo */}
       {isMobile && (
         <div className="p-6 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -196,7 +212,7 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Floating Collapse Button (Hidden on Mobile) */}
+      {/* Floating Collapse Button */}
       <AnimatePresence>
         {!isMobile && (isHovered || isCollapsed) && (
           <motion.button
@@ -269,9 +285,11 @@ export function Sidebar({
                   item={item}
                   isCollapsed={isCollapsed}
                   pathname={pathname}
+                  searchParams={searchParams}
                   isExpanded={expandedMenus.includes(item.label)}
                   onToggle={() => toggleSubmenu(item.label)}
-                  onItemClick={onItemClick} 
+                  onItemClick={onItemClick}
+                  isMenuItemActive={isMenuItemActive}
                 />
               ))}
             </div>
@@ -306,17 +324,29 @@ interface MenuItemProps {
   item: MenuItem;
   isCollapsed: boolean;
   pathname: string;
+  searchParams: ReturnType<typeof useSearchParams>;
   isExpanded: boolean;
   onToggle: () => void;
   isChild?: boolean;
-  onItemClick?: () => void; 
+  onItemClick?: () => void;
+  isMenuItemActive: (href: string) => boolean;
 }
 
-function MenuItem({ item, isCollapsed, pathname, isExpanded, onToggle, isChild = false, onItemClick }: MenuItemProps) {
+function MenuItem({ 
+  item, 
+  isCollapsed, 
+  pathname, 
+  searchParams,
+  isExpanded, 
+  onToggle, 
+  isChild = false, 
+  onItemClick,
+  isMenuItemActive 
+}: MenuItemProps) {
   const Icon = item.icon;
   const hasChildren = item.children && item.children.length > 0;
-  const isActive = item.href ? pathname === item.href : false;
-  const isParentActive = hasChildren && (item.children?.some((child) => child.href === pathname) ?? false);
+  const isActive = item.href ? isMenuItemActive(item.href) : false;
+  const isParentActive = hasChildren && (item.children?.some((child) => child.href && isMenuItemActive(child.href)) ?? false);
 
   if (hasChildren) {
     return (
@@ -366,24 +396,25 @@ function MenuItem({ item, isCollapsed, pathname, isExpanded, onToggle, isChild =
               <div className="mt-1 space-y-0.5 pl-4 border-l-2 border-slate-200 ml-7 py-1">
                 {item.children?.map((child) => {
                   const ChildIcon = child.icon;
+                  const isChildActive = child.href ? isMenuItemActive(child.href) : false;
                   return (
                     <Link key={child.href || child.label} href={child.href || '#'}>
                       <motion.div
                         whileHover={{ x: 3 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={onItemClick} // Pass click handler to children
+                        onClick={onItemClick}
                         className={cn(
                           'relative flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group',
-                          pathname === child.href
+                          isChildActive
                             ? 'bg-blue-50 text-blue-700'
                             : 'text-slate-600 hover:bg-slate-50'
                         )}
                       >
-                        <ChildIcon className={cn('w-4 h-4 flex-shrink-0', pathname === child.href ? 'text-blue-600' : 'text-slate-400')} />
-                        <span className={cn('text-sm transition-all', pathname === child.href ? 'font-semibold' : 'font-medium')}>
+                        <ChildIcon className={cn('w-4 h-4 flex-shrink-0', isChildActive ? 'text-blue-600' : 'text-slate-400')} />
+                        <span className={cn('text-sm transition-all', isChildActive ? 'font-semibold' : 'font-medium')}>
                           {child.label}
                         </span>
-                        {pathname === child.href && (
+                        {isChildActive && (
                           <motion.div layoutId="activeSubmenu" className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full" />
                         )}
                       </motion.div>
@@ -407,10 +438,10 @@ function MenuItem({ item, isCollapsed, pathname, isExpanded, onToggle, isChild =
           'relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group',
           isActive
             ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
-            : 'text-slate-700 hover:bg-slate-50 border-l-4 border-transparent'
+            : 'text-black hover:bg-slate-50 border-l-4 border-transparent'
         )}
       >
-        <Icon className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-blue-600' : 'text-slate-500')} />
+        <Icon className={cn('w-5 h-5 flex-shrink-0', isActive ? 'text-blue-600' : 'text-black')} />
         <motion.span
           animate={{ opacity: isCollapsed ? 0 : 1, width: isCollapsed ? 0 : 'auto' }}
           transition={{ duration: 0.2 }}
