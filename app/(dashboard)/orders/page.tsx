@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Search, X, FilterX, ListFilter, ChevronDown, Check, Plus, Loader2 } from 'lucide-react';
-import { OrdersTable } from './components/orders-table';
+import { Search, X, FilterX, ListFilter, ChevronDown, Check, Loader2 } from 'lucide-react';
+import { OrdersTable } from './components/order-table'; // <--- UPDATED IMPORT
 import { OrderStatus, Order } from '@/app/types/order';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -28,8 +28,9 @@ const STATUS_OPTIONS = [
 const MOCK_ORDERS_DATA = [
   {
     id: '1',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-001',
-    customer: { name: 'Rajesh Kumar', phone: '+91 98765 43210', address: '123 MG Road, Bangalore' },
+    customer: { id: 'c1', storeId: 'store_1', name: 'Rajesh Kumar', phone: '+91 98765 43210', address: '123 MG Road, Bangalore' },
     items: [],
     totalItems: 5,
     services: ['Wash', 'Iron', 'Fold'],
@@ -44,8 +45,9 @@ const MOCK_ORDERS_DATA = [
   },
   {
     id: '2',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-002',
-    customer: { name: 'Priya Sharma', phone: '+91 98765 43211', address: '456 Koramangala, Bangalore' },
+    customer: { id: 'c2', storeId: 'store_1', name: 'Priya Sharma', phone: '+91 98765 43211', address: '456 Koramangala, Bangalore' },
     items: [],
     totalItems: 8,
     services: ['Dry Clean', 'Press'],
@@ -60,8 +62,9 @@ const MOCK_ORDERS_DATA = [
   },
   {
     id: '3',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-003',
-    customer: { name: 'Amit Patel', phone: '+91 98765 43212', address: '789 Indiranagar, Bangalore' },
+    customer: { id: 'c3', storeId: 'store_1', name: 'Amit Patel', phone: '+91 98765 43212', address: '789 Indiranagar, Bangalore' },
     items: [],
     totalItems: 3,
     services: ['Wash', 'Fold'],
@@ -76,8 +79,9 @@ const MOCK_ORDERS_DATA = [
   },
   {
     id: '4',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-004',
-    customer: { name: 'Sneha Reddy', phone: '+91 98765 43213', address: '321 Whitefield, Bangalore' },
+    customer: { id: 'c4', storeId: 'store_1', name: 'Sneha Reddy', phone: '+91 98765 43213', address: '321 Whitefield, Bangalore' },
     items: [],
     totalItems: 12,
     services: ['Wash', 'Iron', 'Starch', 'Fold'],
@@ -92,8 +96,9 @@ const MOCK_ORDERS_DATA = [
   },
   {
     id: '5',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-005',
-    customer: { name: 'Vikram Singh', phone: '+91 98765 43214', address: '654 HSR Layout, Bangalore' },
+    customer: { id: 'c5', storeId: 'store_1', name: 'Vikram Singh', phone: '+91 98765 43214', address: '654 HSR Layout, Bangalore' },
     items: [],
     totalItems: 6,
     services: ['Dry Clean'],
@@ -108,8 +113,9 @@ const MOCK_ORDERS_DATA = [
   },
   {
     id: '6',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-006',
-    customer: { name: 'Ananya Iyer', phone: '+91 98765 43215', address: '987 Jayanagar, Bangalore' },
+    customer: { id: 'c6', storeId: 'store_1', name: 'Ananya Iyer', phone: '+91 98765 43215', address: '987 Jayanagar, Bangalore' },
     items: [],
     totalItems: 4,
     services: ['Wash', 'Iron'],
@@ -124,9 +130,6 @@ const MOCK_ORDERS_DATA = [
   },
 ];
 
-// ============================================
-// CONTENT COMPONENT (Contains useSearchParams logic)
-// ============================================
 function OrdersContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -169,7 +172,7 @@ function OrdersContent() {
       ...order,
       orderDate: new Date(order.orderDate),
       deliveryDate: new Date(order.deliveryDate),
-    })),
+    }) as Order),
     []
   );
 
@@ -200,7 +203,6 @@ function OrdersContent() {
 
   const currentStatus = STATUS_OPTIONS.find(opt => opt.value === statusFilter);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => setIsSelectOpen(false);
     if (isSelectOpen) {
@@ -214,10 +216,8 @@ function OrdersContent() {
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 border-b border-slate-200">
         <div className="px-4 lg:px-6 py-6">
-          {/* Title Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              {/* Status Indicator Dot */}
               <div className={cn('w-3 h-3 rounded-full', currentStatus?.dot)} />
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 mb-1">
@@ -230,10 +230,7 @@ function OrdersContent() {
             </div>
           </div>
 
-          {/* Filters Row */}
           <div className="flex flex-col sm:flex-row sm:items-stretch gap-3">
-            
-            {/* Search Bar */}
             <div className="flex-1 min-w-0">
               <div 
                 style={{ height: '44px' }}
@@ -275,7 +272,6 @@ function OrdersContent() {
               </div>
             </div>
 
-            {/* Status Select (Custom) */}
             <div className="relative w-full sm:w-44">
               <button
                 type="button"
@@ -303,7 +299,6 @@ function OrdersContent() {
                 )} />
               </button>
 
-              {/* Dropdown */}
               <AnimatePresence>
                 {isSelectOpen && (
                   <motion.div
@@ -339,7 +334,6 @@ function OrdersContent() {
               </AnimatePresence>
             </div>
 
-            {/* Clear Filters Button */}
             <AnimatePresence>
               {hasActiveFilters && (
                 <motion.button
@@ -361,7 +355,6 @@ function OrdersContent() {
             </AnimatePresence>
           </div>
 
-          {/* Results Count */}
           <AnimatePresence>
             {hasActiveFilters && (
               <motion.div
@@ -383,17 +376,14 @@ function OrdersContent() {
         </div>
       </div>
 
-      {/* Table Content */}
       <div className="flex-1 overflow-auto px-4 lg:px-6 py-4">
+        {/* CORRECTED COMPONENT USAGE */}
         <OrdersTable orders={filteredOrders} />
       </div>
     </div>
   );
 }
 
-// ============================================
-// MAIN PAGE COMPONENT (WRAPPER)
-// ============================================
 export default function OrdersPage() {
   return (
     <Suspense fallback={

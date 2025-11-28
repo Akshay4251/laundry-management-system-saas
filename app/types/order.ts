@@ -13,11 +13,12 @@ export type PaymentMode = 'cash' | 'card' | 'upi' | 'online';
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 
 export type ItemStatus = 
-  | 'received'      // Item received at center
-  | 'processing'    // Being processed at center
-  | 'workshop'      // At workshop
+  | 'received'      
+  | 'processing'    
+  | 'workshop'      // Sent to external workshop
+  | 'workshop_ready' // Back from workshop, ready for store check
   | 'ready'         // Processed and ready
-  | 'delivered';    // Delivered to customer
+  | 'delivered';  
 
 export type ServiceType = 
   | 'wash'
@@ -28,6 +29,8 @@ export type ServiceType =
   | 'steam';
 
 export interface Customer {
+  id: string; // Added ID
+  storeId: string; // NEW: Multi-store link
   name: string;
   phone: string;
   address: string;
@@ -70,37 +73,24 @@ export interface WorkshopBatch {
 
 export interface Order {
   id: string;
+  storeId: string; 
   orderNumber: string;
   customer: Customer;
-  
-  // Items
-  items: OrderItem[];              // Individual tracked items
-  totalItems: number;              // Total item count
-  
-  // Workshop tracking
-  workshopItems: number;           // Items currently at workshop
-  
-  // Legacy fields (for backward compatibility)
+  items: OrderItem[];              
+  totalItems: number;              
+  workshopItems: number;           
   services: string[];
   specialInstructions: string | null;
-  
-  // Financial
   totalAmount: number;
   paidAmount: number;
   discount?: number;
   tax?: number;
-  
-  // Status & tracking
   status: OrderStatus;
   orderDate: Date;
   deliveryDate: Date;
   completedDate?: Date;
-  
-  // Payment
   paymentMode: PaymentMode;
-  
-  // Additional metadata
-  assignedTo?: string;             // Staff member
+  assignedTo?: string;             
   priority?: 'normal' | 'urgent' | 'express';
   tags?: string[];
 }

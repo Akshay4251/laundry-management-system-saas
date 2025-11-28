@@ -1,241 +1,175 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Order, OrderItem, ItemStatus } from "@/app/types/order";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tag, Printer, Check, AlertCircle, Package, Wrench } from "lucide-react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { SendToWorkshopModal } from '@/components/workshop/send-to-workshop-modal';
+import { OrderItem } from '@/app/types/order';
+import { Shirt, Truck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
+// 1. THIS INTERFACE FIXES THE ERROR
 interface OrderItemsTableProps {
-  order: Order;
+  items: OrderItem[];
+  onStatusUpdate: (itemIds: string[], status: string) => Promise<void>;
 }
 
-export function OrderItemsTable({ order }: OrderItemsTableProps) {
-  const [items, setItems] = useState<OrderItem[]>(order.items);
+export function OrderItemsTable({ items, onStatusUpdate }: OrderItemsTableProps) {
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const handleStatusChange = (itemId: string, status: ItemStatus) => {
-    setItems(items.map((i) => (i.id === itemId ? { ...i, status } : i)));
-  };
-
-  const handlePrintTag = (item: OrderItem) => {
-    console.log("Print tag for:", item.tagNumber);
-    // Implement QR/barcode printing
-  };
-
-  const getItemStatusBadge = (status: ItemStatus) => {
-    const variants = {
-      received: { color: "bg-slate-100 text-slate-700 border-slate-200", label: "Received" },
-      processing: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "Processing" },
-      workshop: { color: "bg-orange-100 text-orange-700 border-orange-200", label: "Workshop" },
-      ready: { color: "bg-green-100 text-green-700 border-green-200", label: "Ready" },
-      delivered: { color: "bg-purple-100 text-purple-700 border-purple-200", label: "Delivered" },
-    };
-
-    const config = variants[status];
-    
-    return (
-      <Badge variant="outline" className={config.color}>
-        {config.label}
-      </Badge>
+  const toggleSelection = (id: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
 
-  const getServiceBadges = (services: string[]) => {
-    const serviceMap: Record<string, { color: string; label: string }> = {
-      wash: { color: "bg-blue-50 text-blue-700", label: "Wash" },
-      dry_clean: { color: "bg-purple-50 text-purple-700", label: "Dry Clean" },
-      iron: { color: "bg-orange-50 text-orange-700", label: "Iron" },
-      fold: { color: "bg-green-50 text-green-700", label: "Fold" },
-      starch: { color: "bg-yellow-50 text-yellow-700", label: "Starch" },
-      steam: { color: "bg-pink-50 text-pink-700", label: "Steam" },
-    };
-
-    return services.map((service) => {
-      const config = serviceMap[service] || { color: "bg-slate-50 text-slate-700", label: service };
-      return (
-        <Badge key={service} variant="outline" className={`${config.color} text-xs`}>
-          {config.label}
-        </Badge>
-      );
-    });
+  // Flow A: Mark items as Ready (In-Store)
+  const handleMarkReady = async () => {
+    setIsUpdating(true);
+    await onStatusUpdate(selectedItems, 'ready');
+    setSelectedItems([]);
+    setIsUpdating(false);
   };
 
-  const allItemsReady = items.every((item) => 
-    item.status === 'ready' || item.status === 'delivered'
-  );
-
-  const workshopCount = items.filter(i => i.status === 'workshop').length;
+  // Flow B: Send items to Workshop
+  const handleSendToWorkshop = async () => {
+    setIsUpdating(true);
+    await onStatusUpdate(selectedItems, 'workshop');
+    setSelectedItems([]);
+    setIsUpdating(false);
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-      className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden"
-    >
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-slate-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Order Items</h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Individual item tracking with tags and status
-            </p>
-          </div>
+    <div className="space-y-4">
+      {/* Bulk Action Toolbar - Appears when items are checked */}
+      {selectedItems.length > 0 && (
+        <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2">
-            {workshopCount > 0 && (
-              <Badge className="bg-orange-100 text-orange-700 border-orange-200">
-                <Wrench className="w-3 h-3 mr-1" />
-                {workshopCount} at Workshop
-              </Badge>
-            )}
-            {allItemsReady ? (
-              <Badge className="bg-green-100 text-green-700 border-green-200">
-                <Check className="w-3 h-3 mr-1" />
-                All Ready
-              </Badge>
-            ) : (
-              <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                In Progress
-              </Badge>
-            )}
+             <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                {selectedItems.length}
+             </span>
+             <span className="text-sm font-medium text-blue-900">items selected</span>
+          </div>
+          
+          <div className="flex gap-2">
+            {/* FLOW A BUTTON */}
+            <Button 
+                size="sm" 
+                disabled={isUpdating}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 shadow-sm"
+                onClick={handleMarkReady}
+            >
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Mark Ready
+            </Button>
+
+            {/* FLOW B BUTTON (MODAL) */}
+            <SendToWorkshopModal 
+                count={selectedItems.length}
+                onConfirm={handleSendToWorkshop}
+            />
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-slate-50">
-              <TableHead className="font-semibold">Tag</TableHead>
-              <TableHead className="font-semibold">Item Details</TableHead>
-              <TableHead className="font-semibold">Services</TableHead>
-              <TableHead className="font-semibold text-center">Qty</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold text-right">Price</TableHead>
-              <TableHead className="font-semibold text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow 
-                key={item.id} 
-                className={cn(
-                  "hover:bg-slate-50",
-                  item.sentToWorkshop && "bg-orange-50/30"
-                )}
-              >
-                <TableCell>
-                  <div className="space-y-1">
-                    <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded">
-                      {item.tagNumber}
-                    </code>
-                    {item.sentToWorkshop && (
-                      <div className="flex items-center gap-1 text-xs text-orange-600">
-                        <Wrench className="w-3 h-3" />
-                        Workshop
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    <p className="font-medium text-slate-900">{item.itemType}</p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      {item.color && (
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-slate-400" />
-                          {item.color}
-                        </span>
-                      )}
-                      {item.brand && (
-                        <span>• {item.brand}</span>
-                      )}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <table className="w-full">
+          <thead className="bg-slate-50 border-b border-slate-100">
+            <tr>
+              <th className="w-12 px-4 py-3">
+                {/* Header Checkbox could go here for 'Select All' */}
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Item Details</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Service</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Price</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {items.map((item) => {
+               // Logic: Can only select items that are New, Received, or Processing
+               // Cannot select items already at workshop, ready, or delivered
+               const isActionable = ['received', 'processing'].includes(item.status);
+
+               return (
+                <tr key={item.id} className={cn("transition-colors", isActionable ? "hover:bg-slate-50/50" : "bg-slate-50/30")}>
+                  <td className="px-4 py-3">
+                    <Checkbox 
+                        checked={selectedItems.includes(item.id)}
+                        onCheckedChange={() => toggleSelection(item.id)}
+                        disabled={!isActionable || isUpdating}
+                        className={cn(
+                          "border-slate-300 data-[state=checked]:bg-blue-600",
+                          !isActionable && "opacity-50"
+                        )}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                            <Shirt className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-slate-900">{item.itemType}</p>
+                            <p className="text-xs text-slate-500 font-mono">{item.tagNumber}</p>
+                        </div>
                     </div>
-                    {item.notes && (
-                      <p className="text-xs text-orange-600 italic">{item.notes}</p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {getServiceBadges(item.services)}
-                  </div>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="font-medium text-slate-900">{item.quantity}</span>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={item.status}
-                    onValueChange={(value) =>
-                      handleStatusChange(item.id, value as ItemStatus)
-                    }
-                  >
-                    <SelectTrigger className="h-9 w-[130px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="received">Received</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="workshop">Workshop</SelectItem>
-                      <SelectItem value="ready">Ready</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  ₹{item.price.toFixed(2)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-9 gap-2"
-                    onClick={() => handlePrintTag(item)}
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print Tag
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  </td>
+                  <td className="px-4 py-3">
+                     <div className="flex gap-1 flex-wrap">
+                        {item.services.map((s, i) => (
+                            <span key={i} className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium uppercase tracking-wide border border-slate-200">
+                                {s.replace('_', ' ')}
+                            </span>
+                        ))}
+                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                     <ItemStatusBadge status={item.status} />
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium text-slate-900">
+                    ₹{item.price}
+                  </td>
+                </tr>
+               );
+            })}
+          </tbody>
+        </table>
       </div>
-
-      {/* Footer Summary */}
-      <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-slate-600">
-            <span className="font-medium">{order.totalItems}</span> total pieces •{" "}
-            <span className="font-medium">{items.length}</span> item types •{" "}
-            <span className="font-medium">{workshopCount}</span> at workshop
-          </div>
-          <div className="text-lg font-semibold text-slate-900">
-            Total: ₹{items.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
-          </div>
-        </div>
-      </div>
-    </motion.div>
+    </div>
   );
+}
+
+// Helper Component for Status Badges
+function ItemStatusBadge({ status }: { status: string }) {
+    switch (status) {
+        case 'workshop':
+            return (
+                <Badge variant="secondary" className="bg-orange-50 text-orange-700 border border-orange-100 gap-1.5 pl-1.5 pr-2.5">
+                    <Truck className="w-3 h-3" /> At Workshop
+                </Badge>
+            );
+        case 'ready':
+            return (
+                <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border border-emerald-100 gap-1.5 pl-1.5 pr-2.5">
+                    <CheckCircle2 className="w-3 h-3" /> Ready
+                </Badge>
+            );
+        case 'processing':
+            return (
+                <Badge variant="secondary" className="bg-blue-50 text-blue-700 border border-blue-100">
+                    Processing
+                </Badge>
+            );
+        case 'delivered':
+            return (
+                <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
+                    Delivered
+                </Badge>
+            );
+        default:
+            return <Badge variant="outline" className="text-slate-500 capitalize">{status}</Badge>;
+    }
 }

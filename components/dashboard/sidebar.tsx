@@ -9,28 +9,24 @@ import {
   UserCircle,
   Package,
   Calendar,
-  Receipt,
-  BarChart3,
+  IndianRupee,
   Settings,
   ChevronDown,
   ChevronsLeft,
   ChevronsRight,
-  TrendingUp,
-  TrendingDown,
-  PieChart,
   LucideIcon,
   Shirt,
   Clock,
   Loader,
   Truck,
   ClipboardList,
-  FileText,
   ListChecks,
-  IndianRupee,
   CheckCircle,
-  Factory
+  Factory,
+  Scissors
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { StoreSwitcher } from './store-switcher';
 
 interface MenuItem {
   icon: LucideIcon;
@@ -67,10 +63,10 @@ const menuSections: MenuSection[] = [
         href: '/orders?status=processing',
         badge: '2' 
       },
-      { 
+       { 
         icon: Factory, 
-        label: 'At Workshop', 
-        href: '/orders?status=workshop' 
+        label: 'Workshop', 
+        href: '/workshop' 
       },
       { 
         icon: CheckCircle, 

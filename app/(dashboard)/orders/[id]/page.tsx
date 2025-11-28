@@ -9,12 +9,31 @@ import { OrderActions } from "./components/order-actions";
 import { OrderInfoCards } from "./components/order-info-cards";
 import { Order, OrderStatus, PaymentMode } from "@/app/types/order";
 
+// --- SERVER ACTION: HANDLES HYBRID FLOW UPDATES ---
+async function updateItemStatus(itemIds: string[], newStatus: string) {
+  'use server';
+  
+  // This function is triggered when you click "Send to Workshop" or "Mark Ready"
+  console.log(`[SERVER ACTION] Updating items [${itemIds.join(', ')}] to status: ${newStatus}`);
+  
+  // TODO: Connect to your Database here
+  // await db.orderItem.updateMany({
+  //   where: { id: { in: itemIds } },
+  //   data: { status: newStatus, ... }
+  // });
+  
+  // revalidatePath(`/orders/${orderId}`);
+}
+
 // Comprehensive Mock Data
 const MOCK_ORDERS: Order[] = [
   {
     id: '1',
+    storeId: 'store_1', // Added for Multi-store compatibility
     orderNumber: 'ORD-2024-001',
     customer: {
+      id: 'cust_1',
+      storeId: 'store_1',
       name: 'Rajesh Kumar',
       phone: '+91 98765 43210',
       address: '123 MG Road, Bangalore, Karnataka 560001',
@@ -103,8 +122,11 @@ const MOCK_ORDERS: Order[] = [
   },
   {
     id: '2',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-002',
     customer: {
+      id: 'cust_2',
+      storeId: 'store_1',
       name: 'Priya Sharma',
       phone: '+91 98765 43211',
       address: '456 Koramangala, Bangalore, Karnataka 560034',
@@ -160,8 +182,11 @@ const MOCK_ORDERS: Order[] = [
   },
   {
     id: '3',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-003',
     customer: {
+      id: 'cust_3',
+      storeId: 'store_1',
       name: 'Amit Patel',
       phone: '+91 98765 43212',
       address: '789 Indiranagar, Bangalore, Karnataka 560038',
@@ -204,8 +229,11 @@ const MOCK_ORDERS: Order[] = [
   },
   {
     id: '4',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-004',
     customer: {
+      id: 'cust_4',
+      storeId: 'store_1',
       name: 'Sneha Reddy',
       phone: '+91 98765 43213',
       address: '321 Whitefield, Bangalore, Karnataka 560066',
@@ -249,8 +277,11 @@ const MOCK_ORDERS: Order[] = [
   },
   {
     id: '5',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-005',
     customer: {
+      id: 'cust_5',
+      storeId: 'store_1',
       name: 'Vikram Singh',
       phone: '+91 98765 43214',
       address: '654 HSR Layout, Bangalore, Karnataka 560102',
@@ -295,8 +326,11 @@ const MOCK_ORDERS: Order[] = [
   },
   {
     id: '6',
+    storeId: 'store_1',
     orderNumber: 'ORD-2024-006',
     customer: {
+      id: 'cust_6',
+      storeId: 'store_1',
       name: 'Ananya Iyer',
       phone: '+91 98765 43215',
       address: '987 Jayanagar, Bangalore, Karnataka 560041',
@@ -350,7 +384,6 @@ interface OrderDetailPageProps {
 }
 
 export default async function OrderDetailPage({ params }: OrderDetailPageProps) {
-  // Await the params object
   const { id } = await params;
   
   const order = MOCK_ORDERS.find((o) => o.id === id);
@@ -388,8 +421,16 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
           </div>
         </div>
 
-        {/* Items Table */}
-        <OrderItemsTable order={order} />
+        {/* Items Table - Updated to support Hybrid Flow via onStatusUpdate */}
+        <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900">Order Items</h3>
+            </div>
+            <OrderItemsTable 
+                items={order.items} 
+                onStatusUpdate={updateItemStatus} 
+            />
+        </div>
 
         {/* Info Cards */}
         <OrderInfoCards order={order} />

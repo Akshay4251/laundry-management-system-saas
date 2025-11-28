@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/sheet';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { StoreSwitcher } from './store-switcher'; 
 
 interface HeaderProps {
   showCreateOrder?: boolean;
@@ -82,24 +83,24 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-40 h-16 bg-white border-b border-blue-100/80">
+    <header className="sticky top-0 z-40 h-16 bg-white border-b border-blue-100/80 backdrop-blur-md">
       <div className="h-full flex items-center justify-between px-4 lg:px-6">
         
-        {/* ===== LEFT SECTION ===== */}
-        <div className="flex items-center gap-4">
+        {/* ===== LEFT SECTION: BRAND & CONTEXT ===== */}
+        <div className="flex items-center">
           {/* Mobile Menu */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="lg:hidden h-10 w-10 rounded-full hover:bg-blue-50 text-slate-600"
+            className="lg:hidden mr-2 h-10 w-10 rounded-full hover:bg-blue-50 text-slate-600"
           >
             <Menu className="w-5 h-5" />
           </Button>
 
-          {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-md shadow-blue-600/25">
+          {/* Logo - Added Right Margin for spacing */}
+          <Link href="/dashboard" className="flex items-center gap-3 mr-8">
+            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center shadow-md shadow-blue-600/25">
               <svg 
                 viewBox="0 0 24 24" 
                 className="w-5 h-5 text-white"
@@ -114,47 +115,61 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
                 <path d="M2 12l10 5 10-5" />
               </svg>
             </div>
-            <span className="hidden sm:block text-[17px] font-semibold text-slate-800">
+            <span className="hidden xl:block text-[17px] font-semibold text-slate-800 tracking-tight">
               LaundryPro
             </span>
           </Link>
+
+          {/* Context Switcher Group */}
+          <div className="hidden md:flex items-center gap-4">
+            {/* Straight Divider */}
+            <div className="h-6 w-px bg-slate-200" /> 
+            
+            {/* Switcher with Blue Theme Hover */}
+            <div className="w-[220px]">
+              <StoreSwitcher 
+                className="border-transparent bg-transparent shadow-none h-9 px-3 hover:bg-blue-50 hover:text-slate-700 text-slate-600" 
+              />
+            </div>
+          </div>
         </div>
 
         {/* ===== CENTER SECTION - SEARCH ===== */}
-        <div className="hidden md:flex flex-1 max-w-xl mx-8 lg:mx-12">
+        <div className="hidden lg:flex flex-1 max-w-md mx-8">
           <div className="relative w-full">
             <div className={cn(
-              "flex items-center w-full h-11 rounded-full border transition-all duration-200",
+              "flex items-center w-full h-10 rounded-full border transition-all duration-200",
               isSearchFocused 
                 ? "border-blue-400 bg-white shadow-lg shadow-blue-100/50 ring-4 ring-blue-50" 
-                : "border-slate-200 bg-slate-50/80 hover:bg-white hover:border-slate-300 hover:shadow-md"
+                : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-slate-300"
             )}>
               <Search className={cn(
-                "w-[18px] h-[18px] ml-5 transition-colors",
+                "w-4 h-4 ml-4 transition-colors",
                 isSearchFocused ? "text-blue-500" : "text-slate-400"
               )} />
               <Input
                 id="header-search"
                 type="text"
-                placeholder="Search orders, customers..."
+                placeholder="Search anything..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
                 className="flex-1 border-0 bg-transparent h-full text-sm placeholder:text-slate-400 focus-visible:ring-0 px-3"
               />
-              {searchQuery ? (
+              {!searchQuery && (
+                <div className="hidden xl:flex items-center gap-1 mr-3 px-2 py-0.5 bg-white border border-slate-200 rounded-md shadow-sm">
+                  <Command className="w-3 h-3 text-slate-400" />
+                  <span className="text-[10px] font-bold text-slate-400">K</span>
+                </div>
+              )}
+              {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="mr-4 p-1.5 rounded-full hover:bg-slate-100 transition-colors"
+                  className="mr-3 p-1 rounded-full hover:bg-slate-100 transition-colors"
                 >
-                  <X className="w-4 h-4 text-slate-400" />
+                  <X className="w-3 h-3 text-slate-400" />
                 </button>
-              ) : (
-                <div className="hidden lg:flex items-center gap-1 mr-4 px-2.5 py-1 bg-white border border-slate-200 rounded-full shadow-sm">
-                  <Command className="w-3 h-3 text-slate-400" />
-                  <span className="text-[11px] font-medium text-slate-400">K</span>
-                </div>
               )}
             </div>
           </div>
@@ -163,13 +178,13 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
         {/* ===== RIGHT SECTION ===== */}
         <div className="flex items-center gap-2">
           
-          {/* Mobile Search */}
+          {/* Mobile Search Trigger */}
           <Sheet>
             <SheetTrigger asChild>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="md:hidden h-10 w-10 rounded-full hover:bg-blue-50 text-slate-600"
+                className="lg:hidden h-9 w-9 rounded-full hover:bg-blue-50 text-slate-600"
               >
                 <Search className="w-5 h-5" />
               </Button>
@@ -179,6 +194,10 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
                 <SheetTitle>Search</SheetTitle>
               </SheetHeader>
               <div className="pt-2 pb-4">
+                {/* Mobile Store Switcher */}
+                <div className="mb-4 md:hidden">
+                   <StoreSwitcher className="w-full justify-between bg-slate-50" />
+                </div>
                 <div className="flex items-center h-12 px-5 rounded-full border border-slate-200 bg-slate-50 focus-within:border-blue-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-50 transition-all">
                   <Search className="w-5 h-5 text-slate-400" />
                   <Input
@@ -194,15 +213,15 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
             </SheetContent>
           </Sheet>
 
-          {/* Create Order Button - Pill Shape */}
+          {/* Create Order Button */}
           {showCreateOrder && (
             <Link href="/create-order">
               <Button 
                 className={cn(
-                  "h-10 px-5 rounded-full text-sm font-medium",
+                  "h-9 px-4 rounded-full text-sm font-medium",
                   "bg-blue-600 hover:bg-blue-700 text-white",
-                  "shadow-md shadow-blue-600/25 hover:shadow-lg hover:shadow-blue-600/30",
-                  "transition-all duration-200"
+                  "shadow-md shadow-blue-600/20 hover:shadow-lg hover:shadow-blue-600/30",
+                  "transition-all duration-200 cursor-pointer"
                 )}
               >
                 <Plus className="w-4 h-4 sm:mr-2" />
@@ -211,11 +230,11 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
             </Link>
           )}
 
-          {/* Help - Desktop Only */}
+          {/* Help */}
           <Button 
             variant="ghost" 
             size="icon" 
-            className="hidden lg:flex h-10 w-10 rounded-full hover:bg-blue-50 text-slate-500 hover:text-slate-700"
+            className="hidden lg:flex h-9 w-9 rounded-full hover:bg-blue-50 text-slate-500 hover:text-slate-700"
           >
             <HelpCircle className="w-[18px] h-[18px]" />
           </Button>
@@ -226,24 +245,21 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="relative h-10 w-10 rounded-full hover:bg-blue-50 text-slate-600"
+                className="relative h-9 w-9 rounded-full hover:bg-blue-50 text-slate-600"
               >
                 <Bell className="w-[18px] h-[18px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-blue-600 rounded-full ring-2 ring-white" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full ring-2 ring-white" />
                 )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 rounded-2xl p-0 bg-white border-slate-200 shadow-xl shadow-slate-200/50">
-              {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                 <span className="text-sm font-semibold text-slate-800">Notifications</span>
                 <button className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded-full hover:bg-blue-50 transition-colors">
                   Mark all read
                 </button>
               </div>
-              
-              {/* List */}
               <div className="max-h-[320px] overflow-y-auto">
                 {notifications.map((notification) => (
                   <div 
@@ -266,21 +282,18 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
                   </div>
                 ))}
               </div>
-              
-              {/* Footer */}
               <div className="p-2 border-t border-slate-100">
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="w-full h-9 text-sm text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-full"
+                  className="w-full h-8 text-sm text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-full"
                 >
-                  View all notifications
+                  View all
                 </Button>
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Separator */}
           <div className="hidden sm:block w-px h-6 bg-slate-200 mx-1" />
 
           {/* User Profile */}
@@ -288,9 +301,9 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
-                className="h-10 px-2 lg:pl-2 lg:pr-3 rounded-full hover:bg-blue-50 gap-2"
+                className="h-9 px-1.5 lg:pl-1.5 lg:pr-3 rounded-full hover:bg-blue-50 gap-2"
               >
-                <Avatar className="h-8 w-8 ring-2 ring-blue-100">
+                <Avatar className="h-7 w-7 ring-2 ring-blue-100">
                   <AvatarImage src="https://randomuser.me/api/portraits/men/45.jpg" />
                   <AvatarFallback className="bg-blue-600 text-white text-xs font-medium">
                     NS
@@ -298,48 +311,28 @@ export function Header({ showCreateOrder = true, onMenuClick }: HeaderProps) {
                 </Avatar>
                 <div className="hidden lg:flex flex-col items-start">
                   <span className="text-sm font-medium text-slate-800 leading-none">Niket Shah</span>
-                  <span className="text-[11px] text-slate-500 leading-none mt-0.5">Manager</span>
                 </div>
-                <ChevronDown className="hidden lg:block w-4 h-4 text-slate-400" />
+                <ChevronDown className="hidden lg:block w-3.5 h-3.5 text-slate-400" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5 bg-white border-slate-200 shadow-xl shadow-slate-200/50">
-              {/* User Info */}
               <div className="px-3 py-3 mb-1 bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl">
                 <p className="text-sm font-semibold text-slate-800">Niket Shah</p>
                 <p className="text-xs text-slate-500 mt-0.5">niket@laundrypro.com</p>
               </div>
-              
               <DropdownMenuItem className="h-9 rounded-full text-sm cursor-pointer text-slate-700 focus:bg-blue-50 focus:text-blue-700">
                 <User className="mr-3 h-4 w-4 text-slate-400" />
                 Profile
-                <DropdownMenuShortcut className="text-slate-400">⇧⌘P</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuItem className="h-9 rounded-full text-sm cursor-pointer text-slate-700 focus:bg-blue-50 focus:text-blue-700">
                 <Settings className="mr-3 h-4 w-4 text-slate-400" />
                 Settings
-                <DropdownMenuShortcut className="text-slate-400">⌘,</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuItem className="h-9 rounded-full text-sm cursor-pointer text-slate-700 focus:bg-blue-50 focus:text-blue-700">
                 <CreditCard className="mr-3 h-4 w-4 text-slate-400" />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem className="h-9 rounded-full text-sm cursor-pointer text-slate-700 focus:bg-blue-50 focus:text-blue-700">
-                <Keyboard className="mr-3 h-4 w-4 text-slate-400" />
-                Shortcuts
-                <DropdownMenuShortcut className="text-slate-400">⌘/</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              
               <DropdownMenuSeparator className="my-1.5" />
-              
-              <DropdownMenuItem className="h-9 rounded-full text-sm cursor-pointer text-slate-700 focus:bg-blue-50 focus:text-blue-700">
-                <HelpCircle className="mr-3 h-4 w-4 text-slate-400" />
-                Help Center
-                <ExternalLink className="ml-auto h-3 w-3 text-slate-400" />
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1.5" />
-              
               <DropdownMenuItem className="h-9 rounded-full text-sm cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700">
                 <LogOut className="mr-3 h-4 w-4" />
                 Log out
