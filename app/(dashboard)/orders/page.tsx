@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Search, X, FilterX, ListFilter, ChevronDown, Check, Plus } from 'lucide-react';
+import { Search, X, FilterX, ListFilter, ChevronDown, Check, Plus, Loader2 } from 'lucide-react';
 import { OrdersTable } from './components/orders-table';
 import { OrderStatus, Order } from '@/app/types/order';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -125,9 +125,9 @@ const MOCK_ORDERS_DATA = [
 ];
 
 // ============================================
-// MAIN COMPONENT
+// CONTENT COMPONENT (Contains useSearchParams logic)
 // ============================================
-export default function OrdersPage() {
+function OrdersContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -388,5 +388,23 @@ export default function OrdersPage() {
         <OrdersTable orders={filteredOrders} />
       </div>
     </div>
+  );
+}
+
+// ============================================
+// MAIN PAGE COMPONENT (WRAPPER)
+// ============================================
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-full items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-sm text-slate-500 font-medium">Loading orders...</p>
+        </div>
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
   );
 }
