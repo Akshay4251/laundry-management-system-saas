@@ -171,7 +171,7 @@ export default function CustomersPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header Section */}
-      <div className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50/80 backdrop-blur-sm">
+      <div className="sticky top-0 z-20 border-b border-slate-20 backdrop-blur-sm">
         <div className="px-4 lg:px-6 py-6">
           {/* Title Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
