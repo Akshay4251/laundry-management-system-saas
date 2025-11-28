@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { 
   ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon,
-  Clock, User, Package, MoreHorizontal, ChevronDown, Check, X
+  Clock, User, Package, MoreHorizontal, ChevronDown, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -63,6 +63,7 @@ const MOCK_EVENTS: Record<string, CalendarEvent[]> = {
     { id: 'nov19', title: 'Delivery - Aditya Kumar', type: 'delivery', time: '04:00 PM', customer: 'Aditya Kumar', orderId: 'ORD-2025-017' },
     { id: 'nov20', title: 'Business Consultation', type: 'appointment', time: '05:30 PM', customer: 'Corporate Client' },
   ],
+
   // December 2025
   '2025-12-01': [
     { id: 'dec1', title: 'Month Start Pickup', type: 'pickup', time: '08:00 AM', customer: 'Neha Kapoor', orderId: 'ORD-2025-018' },
@@ -119,25 +120,23 @@ const MOCK_EVENTS: Record<string, CalendarEvent[]> = {
 };
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const DAYS_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const EVENT_TYPES = {
-  delivery: { color: 'bg-blue-600', label: 'Delivery', lightBg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-  pickup: { color: 'bg-green-600', label: 'Pickup', lightBg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
-  workshop_return: { color: 'bg-orange-600', label: 'Workshop', lightBg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
-  appointment: { color: 'bg-purple-600', label: 'Appointment', lightBg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  delivery: { color: 'bg-blue-600', label: 'Delivery', lightBg: 'bg-blue-50', text: 'text-blue-700' },
+  pickup: { color: 'bg-green-600', label: 'Pickup', lightBg: 'bg-green-50', text: 'text-green-700' },
+  workshop_return: { color: 'bg-orange-600', label: 'Workshop Return', lightBg: 'bg-orange-50', text: 'text-orange-700' },
+  appointment: { color: 'bg-purple-600', label: 'Appointment', lightBg: 'bg-purple-50', text: 'text-purple-700' },
 };
 
 type ViewFilter = 'today' | 'week' | 'month';
 
 export default function CalendarPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 1));
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date(2025, 10, 3));
+  // Start calendar at November 2025 where we have data
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 1)); // November 2025
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date(2025, 10, 3)); // Nov 3 has events
   const [viewFilter, setViewFilter] = useState<ViewFilter>('month');
   const [isYearPickerOpen, setIsYearPickerOpen] = useState(false);
-  const [isMobileEventsOpen, setIsMobileEventsOpen] = useState(false);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -155,6 +154,7 @@ export default function CalendarPage() {
     return days;
   }, [year, month]);
 
+  // Generate year options (2020-2030)
   const yearOptions = useMemo(() => {
     const years = [];
     for (let i = 2020; i <= 2030; i++) {
@@ -178,6 +178,7 @@ export default function CalendarPage() {
     return day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
   };
 
+  // Check if date is in current week
   const isInCurrentWeek = (day: number) => {
     const today = new Date();
     const dayDate = new Date(year, month, day);
@@ -221,86 +222,76 @@ export default function CalendarPage() {
     setIsYearPickerOpen(false);
   };
 
-  const handleDateSelect = (day: number) => {
-    setSelectedDate(new Date(year, month, day));
-    const events = getEventsForDate(day);
-    if (events.length > 0) {
-      setIsMobileEventsOpen(true);
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-slate-200">
-        <div className="px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-          {/* Title Row */}
-          <div className="flex flex-col gap-4 mb-4 sm:mb-6">
-            <div className="flex items-start sm:items-center justify-between gap-3">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-0.5 sm:mb-1">Calendar</h1>
-                <p className="text-xs sm:text-sm text-slate-500">Manage deliveries, pickups & appointments</p>
-              </div>
-              
-              {/* Add Event Button - Always visible */}
-              <button
-                className={cn(
-                  'h-10 sm:h-11 flex items-center justify-center px-3 sm:px-5 gap-1.5 sm:gap-2 rounded-full transition-all duration-200',
-                  'bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm shrink-0'
-                )}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden xs:inline sm:inline">New Event</span>
-              </button>
+        <div className="px-4 lg:px-6 py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 mb-1">Calendar</h1>
+              <p className="text-sm text-slate-500">Manage deliveries, pickups & appointments</p>
             </div>
-
-            {/* Filter Buttons - Scrollable on mobile */}
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
+            <div className="flex gap-2">
+              {/* Filter Buttons */}
               <button
                 onClick={handleToday}
                 className={cn(
-                  'h-9 sm:h-10 flex items-center justify-center px-3 sm:px-4 gap-1.5 rounded-full border transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap shrink-0',
+                  'h-11 flex items-center justify-center px-5 gap-2 rounded-full border transition-all duration-200 font-medium text-sm',
                   viewFilter === 'today'
                     ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                     : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 text-slate-600'
                 )}
               >
-                <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                Today
+                <CalendarIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Today</span>
               </button>
               
               <button
                 onClick={handleThisWeek}
                 className={cn(
-                  'h-9 sm:h-10 flex items-center justify-center px-3 sm:px-4 gap-1.5 rounded-full border transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap shrink-0',
+                  'h-11 flex items-center justify-center px-5 gap-2 rounded-full border transition-all duration-200 font-medium text-sm',
                   viewFilter === 'week'
                     ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                     : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 text-slate-600'
                 )}
               >
-                This Week
+                <span className="hidden sm:inline">This Week</span>
+                <span className="sm:hidden">Week</span>
               </button>
 
               <button
                 onClick={handleThisMonth}
                 className={cn(
-                  'h-9 sm:h-10 flex items-center justify-center px-3 sm:px-4 gap-1.5 rounded-full border transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap shrink-0',
+                  'h-11 flex items-center justify-center px-5 gap-2 rounded-full border transition-all duration-200 font-medium text-sm',
                   viewFilter === 'month'
                     ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                     : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 text-slate-600'
                 )}
               >
-                This Month
+                <span className="hidden sm:inline">This Month</span>
+                <span className="sm:hidden">Month</span>
+              </button>
+
+              <button
+                className={cn(
+                  'h-11 flex items-center justify-center px-5 gap-2 rounded-full transition-all duration-200',
+                  'bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm'
+                )}
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">New Event</span>
+                <span className="sm:hidden">Add</span>
               </button>
             </div>
           </div>
 
-          {/* Legend - Scrollable on mobile */}
-          <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-hide">
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4">
             {Object.entries(EVENT_TYPES).map(([type, config]) => (
-              <div key={type} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <div className={cn("w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full", config.color)} />
-                <span className="text-xs sm:text-sm text-slate-600 whitespace-nowrap">{config.label}</span>
+              <div key={type} className="flex items-center gap-2">
+                <div className={cn("w-2.5 h-2.5 rounded-full", config.color)} />
+                <span className="text-sm text-slate-600">{config.label}</span>
               </div>
             ))}
           </div>
@@ -308,28 +299,27 @@ export default function CalendarPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="flex-1 overflow-auto px-4 lg:px-6 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar Grid */}
           <div className="lg:col-span-2">
-            <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-200">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <h2 className="text-base sm:text-lg font-semibold text-slate-900">
-                    <span className="hidden sm:inline">{MONTHS[month]}</span>
-                    <span className="sm:hidden">{MONTHS_SHORT[month]}</span>
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              {/* Calendar Header with Year Picker */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    {MONTHS[month]}
                   </h2>
                   
-                  {/* Year Picker */}
+                  {/* Year Picker Dropdown */}
                   <div className="relative">
                     <button
                       onClick={() => setIsYearPickerOpen(!isYearPickerOpen)}
-                      className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 transition-colors"
                     >
-                      <span className="text-sm sm:text-base font-medium">{year}</span>
+                      <span className="font-medium">{year}</span>
                       <ChevronDown className={cn(
-                        "w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform",
+                        "w-4 h-4 transition-transform",
                         isYearPickerOpen && "rotate-180"
                       )} />
                     </button>
@@ -337,6 +327,7 @@ export default function CalendarPage() {
                     <AnimatePresence>
                       {isYearPickerOpen && (
                         <>
+                          {/* Backdrop */}
                           <div 
                             className="fixed inset-0 z-40" 
                             onClick={() => setIsYearPickerOpen(false)}
@@ -347,23 +338,23 @@ export default function CalendarPage() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: -10 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute top-full left-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden z-50 w-28 sm:w-32"
+                            className="absolute top-full left-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden z-50 w-32"
                           >
-                            <div className="max-h-48 sm:max-h-64 overflow-y-auto p-1 sm:p-1.5">
+                            <div className="max-h-64 overflow-y-auto p-1.5">
                               {yearOptions.map((yearOption) => (
                                 <button
                                   key={yearOption}
                                   onClick={() => handleYearChange(yearOption)}
                                   className={cn(
-                                    'w-full flex items-center justify-between gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-left transition-all duration-150',
+                                    'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left transition-all duration-150',
                                     year === yearOption
                                       ? 'bg-blue-50 text-blue-700 font-medium'
                                       : 'hover:bg-slate-50 text-slate-700'
                                   )}
                                 >
-                                  <span className="text-xs sm:text-sm">{yearOption}</span>
+                                  <span className="text-sm">{yearOption}</span>
                                   {year === yearOption && (
-                                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
+                                    <Check className="w-4 h-4 text-blue-600" />
                                   )}
                                 </button>
                               ))}
@@ -375,28 +366,28 @@ export default function CalendarPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-0.5 sm:gap-1">
+                <div className="flex gap-1">
                   <button
                     onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
+                    className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
                   >
-                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
+                    className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
                   >
-                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
               {/* Day Headers */}
               <div className="grid grid-cols-7 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-blue-100/50">
-                {DAYS.map((day, index) => (
-                  <div key={day} className="text-center py-2 sm:py-3 text-[10px] sm:text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                {DAYS.map((day) => (
+                  <div key={day} className="text-center py-3 text-xs font-semibold text-blue-900 uppercase tracking-wider">
                     <span className="hidden sm:inline">{day}</span>
-                    <span className="sm:hidden">{DAYS_SHORT[index]}</span>
+                    <span className="sm:hidden">{day.charAt(0)}</span>
                   </div>
                 ))}
               </div>
@@ -417,9 +408,9 @@ export default function CalendarPage() {
                   return (
                     <button
                       key={day}
-                      onClick={() => handleDateSelect(day)}
+                      onClick={() => setSelectedDate(new Date(year, month, day))}
                       className={cn(
-                        "aspect-square border-b border-r border-slate-100 p-0.5 sm:p-1.5 md:p-2 transition-all relative group hover:bg-slate-50",
+                        "aspect-square border-b border-r border-slate-100 p-2 transition-all relative group hover:bg-slate-50",
                         selected && "bg-blue-50 ring-1 ring-inset ring-blue-200",
                         highlighted && !selected && "bg-blue-50/50"
                       )}
@@ -428,8 +419,8 @@ export default function CalendarPage() {
                         {/* Day Number */}
                         <span
                           className={cn(
-                            "text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 transition-all mx-auto",
-                            today && "w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] sm:text-xs",
+                            "text-sm font-medium mb-1 transition-all",
+                            today && "w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center",
                             !today && selected && "text-blue-600 font-semibold",
                             !today && !selected && highlighted && "text-blue-600 font-medium",
                             !today && !selected && !highlighted && "text-slate-700 group-hover:text-slate-900"
@@ -440,45 +431,26 @@ export default function CalendarPage() {
 
                         {/* Event Indicators */}
                         {events.length > 0 && (
-                          <div className="flex flex-col gap-0.5 mt-auto px-0.5">
-                            {/* Mobile: Show dots */}
-                            <div className="flex justify-center gap-0.5 sm:hidden">
-                              {events.slice(0, 3).map((event) => {
-                                const config = EVENT_TYPES[event.type];
-                                return (
-                                  <div
-                                    key={event.id}
-                                    className={cn("w-1.5 h-1.5 rounded-full", config.color)}
-                                  />
-                                );
-                              })}
-                              {events.length > 3 && (
-                                <span className="text-[8px] font-bold text-slate-400">+</span>
-                              )}
-                            </div>
-                            
-                            {/* Desktop: Show bars */}
-                            <div className="hidden sm:flex flex-col gap-0.5">
-                              {events.slice(0, 2).map((event) => {
-                                const config = EVENT_TYPES[event.type];
-                                return (
-                                  <div
-                                    key={event.id}
-                                    className={cn(
-                                      "h-1 md:h-1.5 rounded-full transition-all",
-                                      config.color,
-                                      "group-hover:scale-y-110"
-                                    )}
-                                    title={event.title}
-                                  />
-                                );
-                              })}
-                              {events.length > 2 && (
-                                <span className="text-[9px] md:text-[10px] font-medium text-slate-500 text-center">
-                                  +{events.length - 2}
-                                </span>
-                              )}
-                            </div>
+                          <div className="flex flex-col gap-1 mt-auto">
+                            {events.slice(0, 3).map((event) => {
+                              const config = EVENT_TYPES[event.type];
+                              return (
+                                <div
+                                  key={event.id}
+                                  className={cn(
+                                    "h-1 rounded-full transition-all",
+                                    config.color,
+                                    "group-hover:h-1.5"
+                                  )}
+                                  title={event.title}
+                                />
+                              );
+                            })}
+                            {events.length > 3 && (
+                              <span className="text-[10px] font-medium text-slate-500 text-center">
+                                +{events.length - 3}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -489,235 +461,121 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          {/* Events Sidebar - Desktop */}
-          <div className="hidden lg:flex flex-col bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden max-h-[600px] xl:max-h-[700px]">
-            <EventsSidebar 
-              selectedDate={selectedDate}
-              events={selectedDateEvents}
-            />
-          </div>
-
-          {/* Selected Date Summary - Mobile (Always visible) */}
-          <div className="lg:hidden">
-            <button
-              onClick={() => setIsMobileEventsOpen(true)}
-              className="w-full bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                    <CalendarIcon className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-slate-900 text-sm">
-                      {selectedDate
-                        ? new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(selectedDate)
-                        : 'Select a date'}
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      {selectedDateEvents.length} {selectedDateEvents.length === 1 ? 'event' : 'events'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {selectedDateEvents.length > 0 && (
-                    <div className="flex -space-x-1">
-                      {selectedDateEvents.slice(0, 3).map((event) => {
-                        const config = EVENT_TYPES[event.type];
-                        return (
-                          <div
-                            key={event.id}
-                            className={cn("w-3 h-3 rounded-full border-2 border-white", config.color)}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-                  <ChevronRight className="w-5 h-5 text-slate-400" />
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Events Sheet */}
-      <AnimatePresence>
-        {isMobileEventsOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileEventsOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/40 z-40"
-            />
-            
-            {/* Sheet */}
-            <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="lg:hidden fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl max-h-[85vh] flex flex-col"
-            >
-              {/* Handle */}
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-10 h-1 rounded-full bg-slate-300" />
-              </div>
-
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 pb-3 border-b border-slate-200">
-                <div>
-                  <h3 className="font-semibold text-slate-900">
-                    {selectedDate
-                      ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(selectedDate)
-                      : 'Events'}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {selectedDateEvents.length} {selectedDateEvents.length === 1 ? 'event' : 'events'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsMobileEventsOpen(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center"
-                >
-                  <X className="w-4 h-4 text-slate-600" />
-                </button>
-              </div>
-
-              {/* Events List */}
-              <div className="flex-1 overflow-y-auto p-4">
-                <EventsList events={selectedDateEvents} />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-// Events Sidebar Component (Desktop)
-function EventsSidebar({ selectedDate, events }: { selectedDate: Date | null; events: CalendarEvent[] }) {
-  return (
-    <>
-      {/* Header */}
-      <div className="px-4 xl:px-5 py-3 xl:py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-blue-100/30 shrink-0">
-        <h3 className="font-semibold text-slate-900 text-sm xl:text-base mb-0.5 xl:mb-1">
-          {selectedDate
-            ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(selectedDate)
-            : 'Select a date'}
-        </h3>
-        <p className="text-xs text-slate-600">
-          {events.length} {events.length === 1 ? 'event' : 'events'} scheduled
-        </p>
-      </div>
-
-      {/* Events List */}
-      <div className="flex-1 overflow-y-auto p-3 xl:p-4">
-        <EventsList events={events} />
-      </div>
-    </>
-  );
-}
-
-// Events List Component (Shared between desktop and mobile)
-function EventsList({ events }: { events: CalendarEvent[] }) {
-  if (events.length === 0) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center py-8 sm:py-12"
-      >
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
-          <CalendarIcon className="w-6 h-6 sm:w-7 sm:h-7 text-slate-400" />
-        </div>
-        <p className="text-sm font-medium text-slate-900 mb-1">No events</p>
-        <p className="text-xs text-slate-500 mb-4 text-center px-4">Schedule deliveries or appointments</p>
-        <button className="h-9 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm">
-          <Plus className="w-4 h-4 inline mr-1.5" />
-          Add Event
-        </button>
-      </motion.div>
-    );
-  }
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-3"
-    >
-      {events.map((event, index) => {
-        const config = EVENT_TYPES[event.type];
-        
-        return (
-          <motion.div
-            key={event.id}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="group relative"
-          >
-            <div className={cn(
-              "p-3 sm:p-4 rounded-xl border transition-all",
-              "border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white"
-            )}>
-              {/* Event Type Bar */}
-              <div className={cn("absolute left-0 top-0 bottom-0 w-1 rounded-l-xl", config.color)} />
-
-              {/* Event Header */}
-              <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 sm:mb-3 ml-2.5 sm:ml-3">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-slate-900 text-sm mb-1 truncate">
-                    {event.title}
-                  </h4>
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
-                    <span className="text-xs text-slate-600">{event.time}</span>
-                  </div>
-                </div>
-                <button className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                  <MoreHorizontal className="w-4 h-4 text-slate-400" />
-                </button>
-              </div>
-
-              {/* Event Details */}
-              {(event.customer || event.orderId) && (
-                <div className="space-y-1.5 sm:space-y-2 ml-2.5 sm:ml-3">
-                  {event.customer && (
-                    <div className="flex items-center gap-2">
-                      <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
-                      <span className="text-xs text-slate-600 truncate">{event.customer}</span>
-                    </div>
-                  )}
-                  {event.orderId && (
-                    <div className="flex items-center gap-2">
-                      <Package className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
-                      <span className="text-xs text-slate-600 font-mono">{event.orderId}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Event Type Badge */}
-              <div className="mt-2.5 sm:mt-3 ml-2.5 sm:ml-3">
-                <span className={cn(
-                  "inline-flex items-center px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium border",
-                  config.lightBg,
-                  config.text,
-                  config.border
-                )}>
-                  {config.label}
-                </span>
-              </div>
+          {/* Events Sidebar */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[700px]">
+            {/* Sidebar Header */}
+            <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-blue-100/30">
+              <h3 className="font-semibold text-slate-900 mb-1">
+                {selectedDate
+                  ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(selectedDate)
+                  : 'Select a date'}
+              </h3>
+              <p className="text-xs text-slate-600">
+                {selectedDateEvents.length} {selectedDateEvents.length === 1 ? 'event' : 'events'} scheduled
+              </p>
             </div>
-          </motion.div>
-        );
-      })}
-    </motion.div>
+
+            {/* Events List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <AnimatePresence mode="wait">
+                {selectedDateEvents.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex flex-col items-center justify-center py-12"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+                      <CalendarIcon className="w-7 h-7 text-slate-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-900 mb-1">No events</p>
+                    <p className="text-xs text-slate-500 mb-4 text-center">Schedule deliveries or appointments for this day</p>
+                    <button className="h-9 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm">
+                      <Plus className="w-4 h-4 inline mr-1.5" />
+                      Add Event
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-3"
+                  >
+                    {selectedDateEvents.map((event, index) => {
+                      const config = EVENT_TYPES[event.type];
+                      
+                      return (
+                        <motion.div
+                          key={event.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="group relative"
+                        >
+                          <div className={cn(
+                            "p-4 rounded-xl border transition-all",
+                            "border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white"
+                          )}>
+                            {/* Event Type Bar */}
+                            <div className={cn("absolute left-0 top-0 bottom-0 w-1 rounded-l-xl", config.color)} />
+
+                            {/* Event Header */}
+                            <div className="flex items-start justify-between gap-3 mb-3 ml-3">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-slate-900 text-sm mb-1 truncate">
+                                  {event.title}
+                                </h4>
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                  <span className="text-xs text-slate-600">{event.time}</span>
+                                </div>
+                              </div>
+                              <button className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                <MoreHorizontal className="w-4 h-4 text-slate-400" />
+                              </button>
+                            </div>
+
+                            {/* Event Details */}
+                            {(event.customer || event.orderId) && (
+                              <div className="space-y-2 ml-3">
+                                {event.customer && (
+                                  <div className="flex items-center gap-2">
+                                    <User className="w-3.5 h-3.5 text-slate-400" />
+                                    <span className="text-xs text-slate-600">{event.customer}</span>
+                                  </div>
+                                )}
+                                {event.orderId && (
+                                  <div className="flex items-center gap-2">
+                                    <Package className="w-3.5 h-3.5 text-slate-400" />
+                                    <span className="text-xs text-slate-600 font-mono">{event.orderId}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Event Type Badge */}
+                            <div className="mt-3 ml-3">
+                              <span className={cn(
+                                "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border",
+                                config.lightBg,
+                                config.text,
+                                "border-" + config.color.replace('bg-', '')
+                              )}>
+                                {config.label}
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

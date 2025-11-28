@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -114,21 +114,52 @@ interface SidebarProps {
   onItemClick?: () => void;
 }
 
-export function Sidebar({ 
-  isCollapsed: externalCollapsed, 
-  onToggleCollapse, 
-  isMobile = false, 
+// Loading skeleton for sidebar navigation
+function SidebarSkeleton({ isCollapsed, isMobile }: { isCollapsed: boolean; isMobile: boolean }) {
+  return (
+    <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+      {[1, 2, 3, 4].map((section) => (
+        <div key={section}>
+          {!isCollapsed && (
+            <div className="h-3 w-20 bg-slate-200 rounded mb-3 mx-3 animate-pulse" />
+          )}
+          <div className="space-y-1">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg",
+                  isCollapsed ? "justify-center" : ""
+                )}
+              >
+                <div className="w-5 h-5 bg-slate-200 rounded animate-pulse" />
+                {!isCollapsed && (
+                  <div className="h-4 flex-1 bg-slate-200 rounded animate-pulse" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+// Main Sidebar Content Component (uses useSearchParams)
+function SidebarContent({ 
+  isCollapsed, 
+  isMobile, 
   onItemClick 
-}: SidebarProps) {
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+}: { 
+  isCollapsed: boolean; 
+  isMobile: boolean;
+  onItemClick?: () => void;
+}) {
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [isScrolling, setIsScrolling] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const isCollapsed = isMobile ? false : (externalCollapsed ?? internalCollapsed);
 
   // Helper function to check if a menu item is active
   const isMenuItemActive = (href: string) => {
@@ -158,13 +189,6 @@ export function Sidebar({
     return true;
   };
 
-  const handleToggle = () => {
-    if (isMobile) return;
-    const newState = !isCollapsed;
-    setInternalCollapsed(newState);
-    onToggleCollapse?.(newState);
-  };
-
   const toggleSubmenu = (label: string) => {
     setExpandedMenus((prev) =>
       prev.includes(label)
@@ -184,6 +208,86 @@ export function Sidebar({
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, []);
+
+  return (
+    <nav
+      className={cn('flex-1 p-4 space-y-6 overflow-y-auto sidebar-scroll', isScrolling && 'scrolling')}
+      onScroll={handleScroll}
+    >
+      <style jsx>{`
+        .sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: transparent transparent;
+          transition: scrollbar-color 0.3s ease;
+        }
+        .sidebar-scroll.scrolling {
+          scrollbar-color: #94a3b8 #f1f5f9;
+        }
+        .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 10px; transition: background 0.3s ease; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; transition: background 0.3s ease; }
+        .sidebar-scroll.scrolling::-webkit-scrollbar-track { background: #f1f5f9; }
+        .sidebar-scroll.scrolling::-webkit-scrollbar-thumb { background: #94a3b8; }
+        .sidebar-scroll.scrolling::-webkit-scrollbar-thumb:hover { background: #64748b; }
+      `}</style>
+      
+      {menuSections.map((section, index) => (
+        <div key={section.title}>
+          <motion.div
+            animate={{
+              opacity: isCollapsed ? 0 : 1,
+              height: isCollapsed ? 0 : 'auto',
+              marginBottom: isCollapsed ? 0 : 8,
+            }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <h3 className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+              {section.title}
+            </h3>
+          </motion.div>
+
+          <div className="space-y-1">
+            {section.items.map((item) => (
+              <MenuItem
+                key={item.label}
+                item={item}
+                isCollapsed={isCollapsed}
+                isExpanded={expandedMenus.includes(item.label)}
+                onToggle={() => toggleSubmenu(item.label)}
+                onItemClick={onItemClick}
+                isMenuItemActive={isMenuItemActive}
+              />
+            ))}
+          </div>
+
+          {!isCollapsed && index < menuSections.length - 1 && (
+            <div className="mt-5 mx-3 border-t border-slate-100" />
+          )}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+// Main Sidebar Export
+export function Sidebar({ 
+  isCollapsed: externalCollapsed, 
+  onToggleCollapse, 
+  isMobile = false, 
+  onItemClick 
+}: SidebarProps) {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const isCollapsed = isMobile ? false : (externalCollapsed ?? internalCollapsed);
+
+  const handleToggle = () => {
+    if (isMobile) return;
+    const newState = !isCollapsed;
+    setInternalCollapsed(newState);
+    onToggleCollapse?.(newState);
+  };
 
   return (
     <motion.aside
@@ -240,66 +344,14 @@ export function Sidebar({
         )}
       </AnimatePresence>
 
-      {/* Navigation */}
-      <nav
-        className={cn('flex-1 p-4 space-y-6 overflow-y-auto sidebar-scroll', isScrolling && 'scrolling')}
-        onScroll={handleScroll}
-      >
-        <style jsx>{`
-          .sidebar-scroll {
-            scrollbar-width: thin;
-            scrollbar-color: transparent transparent;
-            transition: scrollbar-color 0.3s ease;
-          }
-          .sidebar-scroll.scrolling {
-            scrollbar-color: #94a3b8 #f1f5f9;
-          }
-          .sidebar-scroll::-webkit-scrollbar { width: 6px; }
-          .sidebar-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 10px; transition: background 0.3s ease; }
-          .sidebar-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; transition: background 0.3s ease; }
-          .sidebar-scroll.scrolling::-webkit-scrollbar-track { background: #f1f5f9; }
-          .sidebar-scroll.scrolling::-webkit-scrollbar-thumb { background: #94a3b8; }
-          .sidebar-scroll.scrolling::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        `}</style>
-        
-        {menuSections.map((section, index) => (
-          <div key={section.title}>
-            <motion.div
-              animate={{
-                opacity: isCollapsed ? 0 : 1,
-                height: isCollapsed ? 0 : 'auto',
-                marginBottom: isCollapsed ? 0 : 8,
-              }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
-            >
-              <h3 className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                {section.title}
-              </h3>
-            </motion.div>
-
-            <div className="space-y-1">
-              {section.items.map((item) => (
-                <MenuItem
-                  key={item.label}
-                  item={item}
-                  isCollapsed={isCollapsed}
-                  pathname={pathname}
-                  searchParams={searchParams}
-                  isExpanded={expandedMenus.includes(item.label)}
-                  onToggle={() => toggleSubmenu(item.label)}
-                  onItemClick={onItemClick}
-                  isMenuItemActive={isMenuItemActive}
-                />
-              ))}
-            </div>
-
-            {!isCollapsed && index < menuSections.length - 1 && (
-              <div className="mt-5 mx-3 border-t border-slate-100" />
-            )}
-          </div>
-        ))}
-      </nav>
+      {/* Navigation with Suspense Boundary */}
+      <Suspense fallback={<SidebarSkeleton isCollapsed={isCollapsed} isMobile={isMobile} />}>
+        <SidebarContent 
+          isCollapsed={isCollapsed} 
+          isMobile={isMobile}
+          onItemClick={onItemClick}
+        />
+      </Suspense>
 
       {/* Footer Info */}
       <motion.div
@@ -323,8 +375,6 @@ export function Sidebar({
 interface MenuItemProps {
   item: MenuItem;
   isCollapsed: boolean;
-  pathname: string;
-  searchParams: ReturnType<typeof useSearchParams>;
   isExpanded: boolean;
   onToggle: () => void;
   isChild?: boolean;
@@ -335,8 +385,6 @@ interface MenuItemProps {
 function MenuItem({ 
   item, 
   isCollapsed, 
-  pathname, 
-  searchParams,
   isExpanded, 
   onToggle, 
   isChild = false, 

@@ -171,7 +171,7 @@ export default function CustomersPage() {
   return (
     <div className="flex flex-col h-full">
       {/* Header Section */}
-      <div className="border-b border-slate-200">
+      <div className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50/80 backdrop-blur-sm">
         <div className="px-4 lg:px-6 py-6">
           {/* Title Row */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -369,7 +369,7 @@ export default function CustomersPage() {
             </div>
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No customers found</h3>
             <p className="text-sm text-slate-500 text-center max-w-sm mb-6">
-              We couldn't find any customers matching your search. Try adjusting your filters.
+              We couldn&apos;t find any customers matching your search. Try adjusting your filters.
             </p>
             <button
               onClick={handleClearFilters}
