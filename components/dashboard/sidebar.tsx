@@ -22,9 +22,12 @@ import {
   ListChecks,
   CheckCircle,
   Factory,
-  ShoppingBag // Used for Pickup
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// ==========================================
+// INTERFACES (Moved to top to fix TS Error)
+// ==========================================
 
 interface MenuItem {
   icon: LucideIcon;
@@ -39,6 +42,27 @@ interface MenuSection {
   items: MenuItem[];
 }
 
+interface SidebarProps {
+  isCollapsed?: boolean;
+  onToggleCollapse?: (collapsed: boolean) => void;
+  isMobile?: boolean;
+  onItemClick?: () => void;
+}
+
+interface MenuItemProps {
+  item: MenuItem;
+  isCollapsed: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  isChild?: boolean;
+  onItemClick?: () => void;
+  isMenuItemActive: (href: string) => boolean;
+}
+
+// ==========================================
+// MENU CONFIGURATION
+// ==========================================
+
 const menuSections: MenuSection[] = [
   {
     title: 'Home',
@@ -49,13 +73,7 @@ const menuSections: MenuSection[] = [
   {
     title: 'Order Operations',
     items: [
-      // REPLACED 'New Orders' with 'Pickups'
-      { 
-        icon: ShoppingBag, 
-        label: 'Pickups', 
-        href: '/orders?status=pickup',
-        badge: '3' // Example badge
-      },
+      // "New Orders" / "Pickups" removed as requested
       { 
         icon: Loader, 
         label: 'In-Progress', 
@@ -102,15 +120,11 @@ const menuSections: MenuSection[] = [
   },
 ];
 
-interface SidebarProps {
-  isCollapsed?: boolean;
-  onToggleCollapse?: (collapsed: boolean) => void;
-  isMobile?: boolean;
-  onItemClick?: () => void;
-}
+// ==========================================
+// COMPONENTS
+// ==========================================
 
-// Loading skeleton for sidebar navigation
-function SidebarSkeleton({ isCollapsed, isMobile }: { isCollapsed: boolean; isMobile: boolean }) {
+function SidebarSkeleton({ isCollapsed }: { isCollapsed: boolean; isMobile: boolean }) {
   return (
     <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
       {[1, 2, 3, 4].map((section) => (
@@ -140,7 +154,6 @@ function SidebarSkeleton({ isCollapsed, isMobile }: { isCollapsed: boolean; isMo
   );
 }
 
-// Main Sidebar Content Component
 function SidebarContent({ 
   isCollapsed, 
   isMobile, 
@@ -170,7 +183,9 @@ function SidebarContent({
 
   const toggleSubmenu = (label: string) => {
     setExpandedMenus((prev) =>
-      prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]
+      prev.includes(label)
+        ? prev.filter((item) => item !== label)
+        : [...prev, label]
     );
   };
 
@@ -247,106 +262,19 @@ function SidebarContent({
   );
 }
 
-export function Sidebar({ 
-  isCollapsed: externalCollapsed, 
-  onToggleCollapse, 
-  isMobile = false, 
-  onItemClick 
-}: SidebarProps) {
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+// ==========================================
+// MENU ITEM COMPONENT
+// ==========================================
 
-  const isCollapsed = isMobile ? false : (externalCollapsed ?? internalCollapsed);
-
-  const handleToggle = () => {
-    if (isMobile) return;
-    const newState = !isCollapsed;
-    setInternalCollapsed(newState);
-    onToggleCollapse?.(newState);
-  };
-
-  return (
-    <motion.aside
-      initial={false}
-      animate={{ width: isCollapsed ? 72 : (isMobile ? '100%' : 256) }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className={cn(
-        "bg-white border-r border-slate-200 h-full flex flex-col",
-        isMobile ? "relative w-full lg:hidden" : "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] hidden lg:flex"
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Mobile Header Logo */}
-      {isMobile && (
-        <div className="p-6 border-b border-slate-100 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-md">
-              <Shirt className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-slate-900 leading-tight">LaundryPro</h1>
-              <p className="text-[10px] text-slate-500 leading-tight">Laundry Management</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Floating Collapse Button */}
-      <AnimatePresence>
-        {!isMobile && (isHovered || isCollapsed) && (
-          <motion.button
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.2 }}
-            onClick={handleToggle}
-            className={cn(
-              'absolute -right-4 top-6 z-50 h-8 bg-white border border-slate-200 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-1.5 group',
-              isCollapsed ? 'w-8 px-0' : 'w-auto px-3'
-            )}
-          >
-            {isCollapsed ? (
-              <ChevronsRight className="w-4 h-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
-            ) : (
-              <>
-                <ChevronsLeft className="w-4 h-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
-                <span className="text-xs font-medium text-slate-600 group-hover:text-blue-600 transition-colors">
-                  Collapse
-                </span>
-              </>
-            )}
-          </motion.button>
-        )}
-      </AnimatePresence>
-
-      <Suspense fallback={<SidebarSkeleton isCollapsed={isCollapsed} isMobile={isMobile} />}>
-        <SidebarContent 
-          isCollapsed={isCollapsed} 
-          isMobile={isMobile}
-          onItemClick={onItemClick}
-        />
-      </Suspense>
-
-      {/* Footer Info */}
-      <motion.div
-        animate={{
-          opacity: isCollapsed ? 0 : 1,
-          height: isCollapsed ? 0 : 'auto',
-        }}
-        transition={{ duration: 0.2 }}
-        className="overflow-hidden border-t border-slate-100 p-4 flex-shrink-0"
-      >
-        <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-200">
-          <p className="text-xs text-slate-700 font-semibold">LaundryPro v2.0</p>
-          <p className="text-[10px] text-slate-500 mt-0.5">© 2024 All rights reserved</p>
-        </div>
-      </motion.div>
-    </motion.aside>
-  );
-}
-
-function MenuItem({ item, isCollapsed, isExpanded, onToggle, isChild = false, onItemClick, isMenuItemActive }: MenuItemProps) {
+function MenuItem({ 
+  item, 
+  isCollapsed, 
+  isExpanded, 
+  onToggle, 
+  isChild = false, 
+  onItemClick, 
+  isMenuItemActive 
+}: MenuItemProps) {
   const Icon = item.icon;
   const hasChildren = item.children && item.children.length > 0;
   const isActive = item.href ? isMenuItemActive(item.href) : false;
@@ -460,5 +388,109 @@ function MenuItem({ item, isCollapsed, isExpanded, onToggle, isChild = false, on
         )}
       </motion.div>
     </Link>
+  );
+}
+
+// ==========================================
+// MAIN SIDEBAR EXPORT
+// ==========================================
+
+export function Sidebar({ 
+  isCollapsed: externalCollapsed, 
+  onToggleCollapse, 
+  isMobile = false, 
+  onItemClick 
+}: SidebarProps) {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const isCollapsed = isMobile ? false : (externalCollapsed ?? internalCollapsed);
+
+  const handleToggle = () => {
+    if (isMobile) return;
+    const newState = !isCollapsed;
+    setInternalCollapsed(newState);
+    onToggleCollapse?.(newState);
+  };
+
+  return (
+    <motion.aside
+      initial={false}
+      animate={{ width: isCollapsed ? 72 : (isMobile ? '100%' : 256) }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      className={cn(
+        "bg-white border-r border-slate-200 h-full flex flex-col",
+        isMobile ? "relative w-full lg:hidden" : "fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] hidden lg:flex"
+      )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Mobile Header Logo */}
+      {isMobile && (
+        <div className="p-6 border-b border-slate-100 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-md">
+              <Shirt className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-900 leading-tight">LaundryPro</h1>
+              <p className="text-[10px] text-slate-500 leading-tight">Laundry Management</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Collapse Button */}
+      <AnimatePresence>
+        {!isMobile && (isHovered || isCollapsed) && (
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -10 }}
+            transition={{ duration: 0.2 }}
+            onClick={handleToggle}
+            className={cn(
+              'absolute -right-4 top-6 z-50 h-8 bg-white border border-slate-200 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-1.5 group',
+              isCollapsed ? 'w-8 px-0' : 'w-auto px-3'
+            )}
+          >
+            {isCollapsed ? (
+              <ChevronsRight className="w-4 h-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
+            ) : (
+              <>
+                <ChevronsLeft className="w-4 h-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                <span className="text-xs font-medium text-slate-600 group-hover:text-blue-600 transition-colors">
+                  Collapse
+                </span>
+              </>
+            )}
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Navigation with Suspense Boundary */}
+      <Suspense fallback={<SidebarSkeleton isCollapsed={isCollapsed} isMobile={isMobile} />}>
+        <SidebarContent 
+          isCollapsed={isCollapsed} 
+          isMobile={isMobile}
+          onItemClick={onItemClick}
+        />
+      </Suspense>
+
+      {/* Footer Info */}
+      <motion.div
+        animate={{
+          opacity: isCollapsed ? 0 : 1,
+          height: isCollapsed ? 0 : 'auto',
+        }}
+        transition={{ duration: 0.2 }}
+        className="overflow-hidden border-t border-slate-100 p-4 flex-shrink-0"
+      >
+        <div className="bg-slate-50 rounded-lg p-3 text-center border border-slate-200">
+          <p className="text-xs text-slate-700 font-semibold">LaundryPro v2.0</p>
+          <p className="text-[10px] text-slate-500 mt-0.5">© 2024 All rights reserved</p>
+        </div>
+      </motion.div>
+    </motion.aside>
   );
 }

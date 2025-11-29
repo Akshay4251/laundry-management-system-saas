@@ -35,12 +35,14 @@ interface OrderActionsProps {
   order: Order;
 }
 
+// Updated Status Labels to match new Type
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  new: "New Order",
+  pickup: "Pickup Scheduled",
   processing: "Processing",
   workshop: "At Workshop",
   ready: "Ready",
   delivery: "Out for Delivery",
+  delivered: "Delivered",
   completed: "Completed",
   cancelled: "Cancelled",
 };
@@ -52,6 +54,7 @@ export function OrderActions({ order }: OrderActionsProps) {
 
   const handleUpdateStatus = async () => {
     setIsUpdating(true);
+    // In production: await updateOrderStatus(order.id, status);
     setTimeout(() => {
       toast.success("Order status updated successfully");
       setIsUpdating(false);
@@ -68,7 +71,8 @@ export function OrderActions({ order }: OrderActionsProps) {
     toast.error("Order cancelled");
   };
 
-  const WORKFLOW: OrderStatus[] = ["new", "processing", "workshop", "ready", "delivery", "completed"];
+  // Updated Workflow Array
+  const WORKFLOW: OrderStatus[] = ["pickup", "processing", "workshop", "ready", "delivery", "delivered", "completed"];
 
   const canProgressToNext = () => {
     const currentIndex = WORKFLOW.indexOf(order.status);
@@ -103,11 +107,12 @@ export function OrderActions({ order }: OrderActionsProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="new">New Order</SelectItem>
+            <SelectItem value="pickup">Pickup</SelectItem>
             <SelectItem value="processing">Processing</SelectItem>
             <SelectItem value="workshop">At Workshop</SelectItem>
             <SelectItem value="ready">Ready</SelectItem>
             <SelectItem value="delivery">Out for Delivery</SelectItem>
+            <SelectItem value="delivered">Delivered</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
           </SelectContent>
         </Select>

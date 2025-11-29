@@ -10,7 +10,7 @@ interface OrderTimelineProps {
 }
 
 const WORKFLOW_STEPS: { key: OrderStatus; label: string }[] = [
-  { key: "new", label: "Order Received" },
+  { key: "pickup", label: "Pickup Scheduled" },
   { key: "processing", label: "Processing at Center" },
   { key: "workshop", label: "At Workshop" },
   { key: "ready", label: "Ready for Delivery" },

@@ -1,6 +1,6 @@
 'use client';
 
-import { Order } from '@/app/types/order';
+import { Order, OrderStatus, PaymentMode } from '@/app/types/order';
 import {
   Sheet,
   SheetContent,
@@ -31,17 +31,19 @@ interface OrderDetailsSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const statusConfig = {
-  new: { label: 'New Order', color: 'bg-blue-500' },
+// Explicit type definition fixes the indexing error
+const statusConfig: Record<OrderStatus, { label: string; color: string }> = {
+  pickup: { label: 'Pickup Scheduled', color: 'bg-blue-500' },
   processing: { label: 'Processing', color: 'bg-yellow-500' },
   workshop: { label: 'At Workshop', color: 'bg-purple-500' },
   ready: { label: 'Ready', color: 'bg-green-500' },
   delivery: { label: 'Out for Delivery', color: 'bg-orange-500' },
+  delivered: { label: 'Delivered', color: 'bg-teal-500' }, 
   completed: { label: 'Completed', color: 'bg-slate-500' },
   cancelled: { label: 'Cancelled', color: 'bg-red-500' },
 };
 
-const paymentModeLabels = {
+const paymentModeLabels: Record<PaymentMode, string> = {
   cash: 'Cash',
   card: 'Card',
   upi: 'UPI',
@@ -55,7 +57,7 @@ export default function OrderDetailsSheet({
 }: OrderDetailsSheetProps) {
   if (!order) return null;
 
-  const statusInfo = statusConfig[order.status];
+  const statusInfo = statusConfig[order.status] || statusConfig.processing;
   const paymentStatus =
     order.paidAmount === 0
       ? 'Unpaid'
@@ -66,7 +68,7 @@ export default function OrderDetailsSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto bg-white">
         <SheetHeader className="space-y-4 pb-6">
           <div className="space-y-2">
             <SheetTitle className="text-2xl font-semibold">
@@ -112,7 +114,7 @@ export default function OrderDetailsSheet({
 
         <div className="space-y-6 pb-6">
           {/* Customer Information */}
-          <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+          <div className="bg-slate-50 rounded-lg p-4 space-y-3 border border-slate-100">
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
               <Package className="w-4 h-4" />
               Customer Information
@@ -186,7 +188,7 @@ export default function OrderDetailsSheet({
           <Separator />
 
           {/* Payment Summary */}
-          <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+          <div className="bg-slate-50 rounded-lg p-4 space-y-3 border border-slate-100">
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
               <IndianRupee className="w-4 h-4" />
               Payment Summary
@@ -212,8 +214,8 @@ export default function OrderDetailsSheet({
                   <CreditCard className="w-4 h-4 text-slate-400" />
                   <span className="text-slate-600">Payment Method</span>
                 </div>
-                <span className="text-slate-900 font-medium">
-                  {paymentModeLabels[order.paymentMode]}
+                <span className="text-slate-900 font-medium capitalize">
+                  {paymentModeLabels[order.paymentMode] || order.paymentMode}
                 </span>
               </div>
             </div>

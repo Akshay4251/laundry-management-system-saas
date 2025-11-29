@@ -1,6 +1,6 @@
 'use client';
 
-import { Order } from '@/app/types/order';
+import { Order, OrderStatus } from '@/app/types/order';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,24 +40,36 @@ export default function OrderActionsMenu({
     window.open(whatsappUrl, '_blank');
   };
 
-  const statusFlow: Order['status'][] = [
-    'new',
+  // Updated flow to match your new lifecycle
+  const statusFlow: OrderStatus[] = [
+    'pickup',
     'processing',
     'workshop',
     'ready',
     'delivery',
+    'delivered',
     'completed',
   ];
-  const currentIndex = statusFlow.indexOf(order.status);
-  const nextStatus = currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
-  const prevStatus = currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
 
-  const statusLabels = {
-    new: 'New Order',
+  const currentIndex = statusFlow.indexOf(order.status);
+  
+  // Logic to determine next/prev steps safely
+  const nextStatus = currentIndex >= 0 && currentIndex < statusFlow.length - 1 
+    ? statusFlow[currentIndex + 1] 
+    : null;
+    
+  const prevStatus = currentIndex > 0 
+    ? statusFlow[currentIndex - 1] 
+    : null;
+
+  // Explicitly typed to ensure all statuses are covered
+  const statusLabels: Record<OrderStatus, string> = {
+    pickup: 'Pickup Scheduled',
     processing: 'Processing',
     workshop: 'At Workshop',
     ready: 'Ready',
     delivery: 'Out for Delivery',
+    delivered: 'Delivered',
     completed: 'Completed',
     cancelled: 'Cancelled',
   };
