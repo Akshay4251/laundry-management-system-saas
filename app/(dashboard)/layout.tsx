@@ -13,20 +13,6 @@ import {
 } from '@/components/ui/sheet';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/dashboard/create-order': 'Create Order',
-  '/dashboard/order-review': 'Order Review',
-  '/dashboard/orders': 'Orders',
-  '/dashboard/customers': 'Customers',
-  '/dashboard/services': 'Services',
-  '/dashboard/inventory': 'Inventory',
-  '/dashboard/staff': 'Staff',
-  '/dashboard/reports': 'Reports',
-  '/dashboard/settings': 'Settings',
-  '/dashboard/bookings': 'All Bookings',
-};
-
 export default function DashboardLayout({
   children,
 }: {
@@ -35,10 +21,22 @@ export default function DashboardLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  
-  const pageTitle = pageTitles[pathname] || 'Dashboard';
-  const showCreateOrder = pathname !== '/dashboard/create-order';
 
+  // --- 1. CHECK FOR PRINT PAGE ---
+  // If we are inside a print route, we strip away ALL dashboard UI
+  const isPrintPage = pathname?.includes('/print/');
+
+  if (isPrintPage) {
+    return (
+      <div className="min-h-screen bg-white w-full h-full">
+        {children}
+      </div>
+    );
+  }
+
+  // --- 2. NORMAL DASHBOARD LOGIC ---
+  const showCreateOrder = pathname !== '/dashboard/create-order';
+  
   // Minimal padding for POS pages
   const isMinimalPadding = pathname === '/dashboard/create-order' || pathname === '/dashboard/order-review';
 
@@ -58,21 +56,19 @@ export default function DashboardLayout({
         />
       </div>
 
-      {/* Mobile Sidebar (Sheet using Regular Sidebar) */}
+      {/* Mobile Sidebar */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="left" className="p-0 w-72 border-r-slate-200">
-          {/* Accessibility Fix */}
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation Menu</SheetTitle>
             <SheetDescription>Mobile navigation sidebar</SheetDescription>
           </SheetHeader>
           
-          {/* Reusing Regular Sidebar */}
           <div className="h-full w-full">
             <Sidebar 
-              isCollapsed={false} // Always expanded on mobile
-              isMobile={true}     // New prop to handle mobile adjustments
-              onItemClick={() => setMobileMenuOpen(false)} // Close on click
+              isCollapsed={false}
+              isMobile={true}
+              onItemClick={() => setMobileMenuOpen(false)}
             />
           </div>
         </SheetContent>

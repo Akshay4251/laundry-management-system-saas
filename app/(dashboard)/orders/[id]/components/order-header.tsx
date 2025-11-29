@@ -14,8 +14,17 @@ import {
   AlertCircle,
   Zap,
   Star,
+  Tags,
+  FileText,
+  ChevronDown
 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface OrderHeaderProps {
   order: Order;
@@ -33,11 +42,25 @@ const formatDateTime = (date: Date) => {
 };
 
 export function OrderHeader({ order }: OrderHeaderProps) {
-  const handlePrint = () => {
-    window.print();
+  
+  // --- NEW PRINT HANDLER ---
+  const handlePrint = (type: 'invoice' | 'tags') => {
+    // Opens a new window with the specific print template
+    const url = `/orders/${order.id}/print/${type}`;
+    const width = type === 'tags' ? 400 : 800;
+    const height = 600;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+    
+    window.open(
+      url, 
+      `Print ${type}`, 
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
   };
 
   const handleShare = () => {
+    // Future implementation: Web Share API or WhatsApp link
     console.log("Share order:", order.id);
   };
 
@@ -66,7 +89,7 @@ export function OrderHeader({ order }: OrderHeaderProps) {
       className="bg-white rounded-lg border border-slate-200 shadow-sm p-6"
     >
       {/* Top Row: Title and Actions */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center gap-3 mb-2 flex-wrap">
             <h1 className="text-2xl font-semibold text-slate-900">
@@ -96,15 +119,27 @@ export function OrderHeader({ order }: OrderHeaderProps) {
             <Share2 className="w-4 h-4" />
             Share
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 gap-2"
-            onClick={handlePrint}
-          >
-            <Printer className="w-4 h-4" />
-            Print
-          </Button>
+
+          {/* PRINT DROPDOWN MENU */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 gap-2">
+                <Printer className="w-4 h-4" />
+                Print
+                <ChevronDown className="w-3 h-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handlePrint('invoice')}>
+                <FileText className="w-4 h-4 mr-2" />
+                Print Invoice
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handlePrint('tags')}>
+                <Tags className="w-4 h-4 mr-2" />
+                Print Tags
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
