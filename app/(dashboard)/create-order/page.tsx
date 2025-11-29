@@ -123,7 +123,7 @@ export default function CreateOrderPage() {
 
   const handleReviewOrder = () => {
     localStorage.setItem('currentOrder', JSON.stringify(orderItems));
-    router.push('/dashboard/order-review');
+    router.push('/order-review');
   };
 
   const clearSearch = () => setSearchQuery('');
