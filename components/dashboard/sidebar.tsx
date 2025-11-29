@@ -16,17 +16,15 @@ import {
   ChevronsRight,
   LucideIcon,
   Shirt,
-  Clock,
   Loader,
   Truck,
   ClipboardList,
   ListChecks,
   CheckCircle,
   Factory,
-  Scissors
+  ShoppingBag // Used for Pickup
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StoreSwitcher } from './store-switcher';
 
 interface MenuItem {
   icon: LucideIcon;
@@ -51,11 +49,12 @@ const menuSections: MenuSection[] = [
   {
     title: 'Order Operations',
     items: [
+      // REPLACED 'New Orders' with 'Pickups'
       { 
-        icon: Clock, 
-        label: 'New Orders', 
-        href: '/orders?status=new',
-        badge: '5' 
+        icon: ShoppingBag, 
+        label: 'Pickups', 
+        href: '/orders?status=pickup',
+        badge: '3' // Example badge
       },
       { 
         icon: Loader, 
@@ -141,7 +140,7 @@ function SidebarSkeleton({ isCollapsed, isMobile }: { isCollapsed: boolean; isMo
   );
 }
 
-// Main Sidebar Content Component (uses useSearchParams)
+// Main Sidebar Content Component
 function SidebarContent({ 
   isCollapsed, 
   isMobile, 
@@ -157,39 +156,21 @@ function SidebarContent({
   const searchParams = useSearchParams();
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Helper function to check if a menu item is active
   const isMenuItemActive = (href: string) => {
     if (!href) return false;
-
-    // Parse the href to get pathname and query params
     const [hrefPath, hrefQuery] = href.split('?');
-    
-    // Check if pathname matches
     if (pathname !== hrefPath) return false;
-    
-    // If no query params in href, it's active only if current URL also has no params
-    if (!hrefQuery) {
-      return searchParams.toString() === '';
-    }
-    
-    // Parse query params from href
+    if (!hrefQuery) return searchParams.toString() === '';
     const hrefParams = new URLSearchParams(hrefQuery);
-    
-    // Check if all href params match current search params
     for (const [key, value] of hrefParams.entries()) {
-      if (searchParams.get(key) !== value) {
-        return false;
-      }
+      if (searchParams.get(key) !== value) return false;
     }
-    
     return true;
   };
 
   const toggleSubmenu = (label: string) => {
     setExpandedMenus((prev) =>
-      prev.includes(label)
-        ? prev.filter((item) => item !== label)
-        : [...prev, label]
+      prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]
     );
   };
 
@@ -266,7 +247,6 @@ function SidebarContent({
   );
 }
 
-// Main Sidebar Export
 export function Sidebar({ 
   isCollapsed: externalCollapsed, 
   onToggleCollapse, 
@@ -340,7 +320,6 @@ export function Sidebar({
         )}
       </AnimatePresence>
 
-      {/* Navigation with Suspense Boundary */}
       <Suspense fallback={<SidebarSkeleton isCollapsed={isCollapsed} isMobile={isMobile} />}>
         <SidebarContent 
           isCollapsed={isCollapsed} 
@@ -367,26 +346,7 @@ export function Sidebar({
   );
 }
 
-// Menu Item Component
-interface MenuItemProps {
-  item: MenuItem;
-  isCollapsed: boolean;
-  isExpanded: boolean;
-  onToggle: () => void;
-  isChild?: boolean;
-  onItemClick?: () => void;
-  isMenuItemActive: (href: string) => boolean;
-}
-
-function MenuItem({ 
-  item, 
-  isCollapsed, 
-  isExpanded, 
-  onToggle, 
-  isChild = false, 
-  onItemClick,
-  isMenuItemActive 
-}: MenuItemProps) {
+function MenuItem({ item, isCollapsed, isExpanded, onToggle, isChild = false, onItemClick, isMenuItemActive }: MenuItemProps) {
   const Icon = item.icon;
   const hasChildren = item.children && item.children.length > 0;
   const isActive = item.href ? isMenuItemActive(item.href) : false;

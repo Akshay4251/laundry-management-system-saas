@@ -7,10 +7,10 @@ interface StatusBadgeProps {
 }
 
 const statusConfig: Record<OrderStatus, { label: string; className: string; dotColor: string }> = {
-  new: {
-    label: 'New Order',
-    className: 'bg-sky-50 text-sky-700 border-sky-200',
-    dotColor: 'bg-sky-500',
+  pickup: { // <--- ADDED
+    label: 'Pickup Scheduled',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    dotColor: 'bg-amber-500',
   },
   processing: {
     label: 'Processing',
@@ -32,6 +32,11 @@ const statusConfig: Record<OrderStatus, { label: string; className: string; dotC
     className: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     dotColor: 'bg-indigo-500',
   },
+  delivered: { // <--- ADDED
+    label: 'Delivered',
+    className: 'bg-teal-50 text-teal-700 border-teal-200',
+    dotColor: 'bg-teal-500',
+  },
   completed: {
     label: 'Completed',
     className: 'bg-slate-50 text-slate-600 border-slate-200',
@@ -45,7 +50,11 @@ const statusConfig: Record<OrderStatus, { label: string; className: string; dotC
 };
 
 export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const config = statusConfig[status] || {
+    label: status,
+    className: 'bg-slate-50 text-slate-600 border-slate-200',
+    dotColor: 'bg-slate-400'
+  };
 
   return (
     <span

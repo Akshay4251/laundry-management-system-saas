@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Search, X, FilterX, ListFilter, ChevronDown, Check, Loader2 } from 'lucide-react';
-import { OrdersTable } from './components/order-table'; // <--- UPDATED IMPORT
+import { OrdersTable } from './components/order-table';
 import { OrderStatus, Order } from '@/app/types/order';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -13,19 +13,20 @@ import { cn } from '@/lib/utils';
 // ============================================
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All Orders', headerTitle: 'Orders', description: 'Manage and track all laundry orders', dot: 'bg-slate-400' },
-  { value: 'new', label: 'New', headerTitle: 'New Orders', description: 'Recently received orders awaiting processing', dot: 'bg-blue-500' },
-  { value: 'processing', label: 'Processing', headerTitle: 'Processing Orders', description: 'Orders currently being processed', dot: 'bg-amber-500' },
+  { value: 'pickup', label: 'Pickup', headerTitle: 'Scheduled Pickups', description: 'Orders waiting to be collected', dot: 'bg-blue-500' },
+  { value: 'processing', label: 'Processing', headerTitle: 'Processing Orders', description: 'Orders currently being washed/ironed', dot: 'bg-amber-500' },
   { value: 'workshop', label: 'Workshop', headerTitle: 'Workshop Orders', description: 'Orders sent to external workshop', dot: 'bg-purple-500' },
   { value: 'ready', label: 'Ready', headerTitle: 'Ready Orders', description: 'Orders ready for pickup or delivery', dot: 'bg-green-500' },
-  { value: 'delivery', label: 'Delivery', headerTitle: 'Orders in Delivery', description: 'Orders currently out for delivery', dot: 'bg-indigo-500' },
-  { value: 'completed', label: 'Completed', headerTitle: 'Completed Orders', description: 'Successfully delivered orders', dot: 'bg-emerald-500' },
+  { value: 'delivery', label: 'Out for Delivery', headerTitle: 'Out for Delivery', description: 'Orders currently with drivers', dot: 'bg-indigo-500' },
+  { value: 'delivered', label: 'Delivered', headerTitle: 'Delivered Orders', description: 'Handed over to customer', dot: 'bg-teal-500' },
+  { value: 'completed', label: 'Completed', headerTitle: 'Archived Orders', description: 'Successfully completed and closed', dot: 'bg-emerald-500' },
   { value: 'cancelled', label: 'Cancelled', headerTitle: 'Cancelled Orders', description: 'Orders that were cancelled', dot: 'bg-red-500' },
 ] as const;
 
 // ============================================
 // MOCK DATA
 // ============================================
-const MOCK_ORDERS_DATA = [
+const MOCK_ORDERS_DATA: Order[] = [
   {
     id: '1',
     storeId: 'store_1',
@@ -37,10 +38,10 @@ const MOCK_ORDERS_DATA = [
     specialInstructions: 'Use fabric softener',
     totalAmount: 1250,
     paidAmount: 1250,
-    status: 'completed' as OrderStatus,
-    orderDate: '2024-01-15T10:30:00',
-    deliveryDate: '2024-01-17T18:00:00',
-    paymentMode: 'upi' as const,
+    status: 'completed',
+    orderDate: new Date('2024-01-15T10:30:00'),
+    deliveryDate: new Date('2024-01-17T18:00:00'),
+    paymentMode: 'upi',
     workshopItems: 0,
   },
   {
@@ -54,10 +55,10 @@ const MOCK_ORDERS_DATA = [
     specialInstructions: 'Handle silk items carefully',
     totalAmount: 2100,
     paidAmount: 1000,
-    status: 'processing' as OrderStatus,
-    orderDate: '2024-01-16T09:15:00',
-    deliveryDate: '2024-01-18T17:00:00',
-    paymentMode: 'cash' as const,
+    status: 'processing',
+    orderDate: new Date('2024-01-16T09:15:00'),
+    deliveryDate: new Date('2024-01-18T17:00:00'),
+    paymentMode: 'cash',
     workshopItems: 0,
   },
   {
@@ -71,10 +72,10 @@ const MOCK_ORDERS_DATA = [
     specialInstructions: null,
     totalAmount: 850,
     paidAmount: 0,
-    status: 'new' as OrderStatus,
-    orderDate: '2024-01-16T11:45:00',
-    deliveryDate: '2024-01-19T16:00:00',
-    paymentMode: 'online' as const,
+    status: 'pickup', // <--- Changed from 'new' to 'pickup'
+    orderDate: new Date('2024-01-16T11:45:00'),
+    deliveryDate: new Date('2024-01-19T16:00:00'),
+    paymentMode: 'online',
     workshopItems: 0,
   },
   {
@@ -88,10 +89,10 @@ const MOCK_ORDERS_DATA = [
     specialInstructions: 'Extra starch on shirts',
     totalAmount: 3500,
     paidAmount: 3500,
-    status: 'ready' as OrderStatus,
-    orderDate: '2024-01-15T14:20:00',
-    deliveryDate: '2024-01-17T15:00:00',
-    paymentMode: 'card' as const,
+    status: 'ready',
+    orderDate: new Date('2024-01-15T14:20:00'),
+    deliveryDate: new Date('2024-01-17T15:00:00'),
+    paymentMode: 'card',
     workshopItems: 0,
   },
   {
@@ -105,10 +106,10 @@ const MOCK_ORDERS_DATA = [
     specialInstructions: 'Urgent - wedding event',
     totalAmount: 1800,
     paidAmount: 1800,
-    status: 'delivery' as OrderStatus,
-    orderDate: '2024-01-16T08:00:00',
-    deliveryDate: '2024-01-17T20:00:00',
-    paymentMode: 'upi' as const,
+    status: 'delivery', // <--- Out for Delivery state
+    orderDate: new Date('2024-01-16T08:00:00'),
+    deliveryDate: new Date('2024-01-17T20:00:00'),
+    paymentMode: 'upi',
     workshopItems: 0,
   },
   {
@@ -122,10 +123,10 @@ const MOCK_ORDERS_DATA = [
     specialInstructions: null,
     totalAmount: 1100,
     paidAmount: 1100,
-    status: 'workshop' as OrderStatus,
-    orderDate: '2024-01-15T16:30:00',
-    deliveryDate: '2024-01-17T12:00:00',
-    paymentMode: 'cash' as const,
+    status: 'workshop',
+    orderDate: new Date('2024-01-15T16:30:00'),
+    deliveryDate: new Date('2024-01-17T12:00:00'),
+    paymentMode: 'cash',
     workshopItems: 4,
   },
 ];
@@ -167,14 +168,8 @@ function OrdersContent() {
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const MOCK_ORDERS: Order[] = useMemo(() => 
-    MOCK_ORDERS_DATA.map(order => ({
-      ...order,
-      orderDate: new Date(order.orderDate),
-      deliveryDate: new Date(order.deliveryDate),
-    }) as Order),
-    []
-  );
+  // Memoize and type the mock data (Date objects are already set above)
+  const MOCK_ORDERS = useMemo(() => MOCK_ORDERS_DATA, []);
 
   const filteredOrders = useMemo(() => {
     return MOCK_ORDERS.filter((order) => {
@@ -214,11 +209,11 @@ function OrdersContent() {
   return (
     <div className="flex flex-col h-full">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-20 border-b border-slate-200">
+      <div className="sticky top-0 z-20">
         <div className="px-4 lg:px-6 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className={cn('w-3 h-3 rounded-full', currentStatus?.dot)} />
+              <div className={cn('w-3 h-3 rounded-full shadow-sm', currentStatus?.dot)} />
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 mb-1">
                   {currentStatus?.headerTitle || 'Orders'}
@@ -272,7 +267,7 @@ function OrdersContent() {
               </div>
             </div>
 
-            <div className="relative w-full sm:w-44">
+            <div className="relative w-full sm:w-48">
               <button
                 type="button"
                 onClick={(e) => {
@@ -306,7 +301,7 @@ function OrdersContent() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-xl p-1.5 z-50"
+                    className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-xl p-1.5 z-50 max-h-[300px] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {STATUS_OPTIONS.map((option) => (
@@ -377,7 +372,7 @@ function OrdersContent() {
       </div>
 
       <div className="flex-1 overflow-auto px-4 lg:px-6 py-4">
-        {/* CORRECTED COMPONENT USAGE */}
+        {/* Renders the table component we updated earlier */}
         <OrdersTable orders={filteredOrders} />
       </div>
     </div>
