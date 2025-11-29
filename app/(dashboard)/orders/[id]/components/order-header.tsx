@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react"; // <--- Added hooks
 import { Order } from "@/app/types/order";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,6 @@ interface OrderHeaderProps {
   order: Order;
 }
 
-// Utility function for consistent date formatting
 const formatDateTime = (date: Date) => {
   return new Intl.DateTimeFormat('en-US', {
     month: 'long',
@@ -42,11 +42,21 @@ const formatDateTime = (date: Date) => {
 };
 
 export function OrderHeader({ order }: OrderHeaderProps) {
-  
-  // --- NEW PRINT HANDLER ---
+  // --- HYDRATION FIX START ---
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Prevent hydration mismatch by not rendering until client side
+  if (!isMounted) {
+    return <div className="h-64 bg-white rounded-lg border border-slate-200 shadow-sm animate-pulse" />; 
+  }
+  // --- HYDRATION FIX END ---
+
   const handlePrint = (type: 'invoice' | 'tags') => {
-    // Opens a new window with the specific print template
-    const url = `/orders/${order.id}/print/${type}`;
+    const url = `/print/${order.id}/${type}`;
     const width = type === 'tags' ? 400 : 800;
     const height = 600;
     const left = (window.screen.width - width) / 2;
@@ -60,7 +70,6 @@ export function OrderHeader({ order }: OrderHeaderProps) {
   };
 
   const handleShare = () => {
-    // Future implementation: Web Share API or WhatsApp link
     console.log("Share order:", order.id);
   };
 
@@ -120,7 +129,6 @@ export function OrderHeader({ order }: OrderHeaderProps) {
             Share
           </Button>
 
-          {/* PRINT DROPDOWN MENU */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 gap-2">

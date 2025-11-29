@@ -22,6 +22,7 @@ import {
   ListChecks,
   CheckCircle,
   Factory,
+  ShoppingBag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -73,7 +74,12 @@ const menuSections: MenuSection[] = [
   {
     title: 'Order Operations',
     items: [
-      // "New Orders" / "Pickups" removed as requested
+       { 
+        icon: ShoppingBag, 
+        label: 'Pickups', 
+        href: '/orders?status=pickup',
+        badge: '1'
+      },
       { 
         icon: Loader, 
         label: 'In-Progress', 

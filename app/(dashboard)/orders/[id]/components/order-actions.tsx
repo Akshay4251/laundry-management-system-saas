@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect
 import { Order, OrderStatus } from "@/app/types/order";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,7 +35,6 @@ interface OrderActionsProps {
   order: Order;
 }
 
-// Updated Status Labels to match new Type
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pickup: "Pickup Scheduled",
   processing: "Processing",
@@ -51,10 +50,20 @@ export function OrderActions({ order }: OrderActionsProps) {
   const [status, setStatus] = useState<OrderStatus>(order.status);
   const [note, setNote] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // --- HYDRATION FIX ---
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <div className="bg-white rounded-lg border border-slate-200 h-96 animate-pulse" />;
+  }
+  // ---------------------
 
   const handleUpdateStatus = async () => {
     setIsUpdating(true);
-    // In production: await updateOrderStatus(order.id, status);
     setTimeout(() => {
       toast.success("Order status updated successfully");
       setIsUpdating(false);
@@ -71,7 +80,6 @@ export function OrderActions({ order }: OrderActionsProps) {
     toast.error("Order cancelled");
   };
 
-  // Updated Workflow Array
   const WORKFLOW: OrderStatus[] = ["pickup", "processing", "workshop", "ready", "delivery", "delivered", "completed"];
 
   const canProgressToNext = () => {
