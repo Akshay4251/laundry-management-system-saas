@@ -1,3 +1,4 @@
+// app/(auth)/register/page.tsx
 import RegisterForm from "@/components/auth/register-form";
 import Link from "next/link";
 import { 
@@ -28,7 +29,7 @@ export default function RegisterPage() {
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                LaundryPro
+                WashNDry
               </span>
             </Link>
             
@@ -58,7 +59,7 @@ export default function RegisterPage() {
             </h1>
             
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              Join 2,000+ successful businesses using LaundryPro to streamline operations and increase revenue.
+              Join 2,000+ successful businesses using WashNDry to streamline operations and increase revenue.
             </p>
 
             {/* Quick Features */}

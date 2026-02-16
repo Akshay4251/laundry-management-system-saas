@@ -1,17 +1,21 @@
+// app/(dashboard)/layout.tsx
+
 'use client';
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Header } from '@/components/dashboard/header';
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetDescription 
+import { SubscriptionBanner } from '@/components/dashboard/subscription-banner';
+import { AppShell } from '@/components/app-shell'; // ⚡ NEW
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet';
-import { AnimatePresence, motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({
   children,
@@ -22,8 +26,6 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // --- 1. CHECK FOR PRINT PAGE ---
-  // If we are inside a print route, we strip away ALL dashboard UI
   const isPrintPage = pathname?.includes('/print/');
 
   if (isPrintPage) {
@@ -34,77 +36,74 @@ export default function DashboardLayout({
     );
   }
 
-  // --- 2. NORMAL DASHBOARD LOGIC ---
   const showCreateOrder = pathname !== '/dashboard/create-order';
-  
-  // Minimal padding for POS pages
-  const isMinimalPadding = pathname === '/dashboard/create-order' || pathname === '/dashboard/order-review';
+  const isMinimalPadding =
+    pathname === '/dashboard/create-order' ||
+    pathname === '/dashboard/order-review';
 
   return (
-    <div className="min-h-screen bg-slate-200">
-      {/* Header */}
-      <Header 
-        showCreateOrder={showCreateOrder}
-        onMenuClick={() => setMobileMenuOpen(true)}
-      />
-
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
-        <Sidebar
-          isCollapsed={sidebarCollapsed}
-          onToggleCollapse={setSidebarCollapsed}
+    // ⚡ NEW: Single unified auth/subscription check
+    <AppShell>
+      <div className="min-h-screen bg-slate-100">
+        {/* Fixed Header */}
+        <Header
+          showCreateOrder={showCreateOrder}
+          onMenuClick={() => setMobileMenuOpen(true)}
         />
-      </div>
 
-      {/* Mobile Sidebar */}
-      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="p-0 w-72 border-r-slate-200">
-          <SheetHeader className="sr-only">
-            <SheetTitle>Navigation Menu</SheetTitle>
-            <SheetDescription>Mobile navigation sidebar</SheetDescription>
-          </SheetHeader>
-          
-          <div className="h-full w-full">
-            <Sidebar 
-              isCollapsed={false}
-              isMobile={true}
-              onItemClick={() => setMobileMenuOpen(false)}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Main Content */}
-      <main
-        className={`
-          transition-all duration-300
-          min-h-[calc(100vh-4rem)]
-          ${/* Mobile: No Margin */ 'ml-0'}
-          ${/* Desktop: Dynamic Margin */ sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-64'}
-        `}
-      >
-        <div 
-          className={`
-            w-full h-full
-            ${isMinimalPadding ? 'p-0' : 'p-4 sm:p-6 lg:p-8'}
-          `}
-        >
-          <div className="max-w-[1600px] mx-auto h-full">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="h-full"
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block">
+          <Sidebar
+            isCollapsed={sidebarCollapsed}
+            onToggleCollapse={setSidebarCollapsed}
+          />
         </div>
-      </main>
-    </div>
+
+        {/* Mobile Sidebar */}
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent side="left" className="p-0 w-72 border-r-slate-200">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Navigation Menu</SheetTitle>
+              <SheetDescription>Mobile navigation sidebar</SheetDescription>
+            </SheetHeader>
+            <div className="h-full w-full">
+              <Sidebar
+                isCollapsed={false}
+                isMobile={true}
+                onItemClick={() => setMobileMenuOpen(false)}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Main Content */}
+        <main
+          className={cn(
+            'min-h-screen pt-16 transition-all duration-300 ease-in-out',
+            sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-64'
+          )}
+        >
+          {/* Banner */}
+          <SubscriptionBanner />
+
+          {/* Page Content */}
+          <div
+            className={cn(
+              'w-full',
+              isMinimalPadding
+                ? 'pt-0'
+                : 'pt-0 px-4 pb-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8'
+            )}
+          >
+            <div className="max-w-[1600px] mx-auto">
+              {/* Simple fade-in via CSS instead */}
+              <div className="animate-in fade-in duration-200">
+                {children}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </AppShell>
   );
 }

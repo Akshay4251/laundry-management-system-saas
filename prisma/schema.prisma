@@ -1,0 +1,1233 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// USER & AUTHENTICATION
+// ============================================================================
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  fullName     String    @map("full_name")
+  role         UserRole  @default(OWNER)
+  businessId   String?   @unique @map("business_id")
+  business     Business? @relation(fields: [businessId], references: [id])
+
+  accounts    Account[]
+  sessions    Session[]
+  preferences UserPreferences?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+// ============================================================================
+// USER PREFERENCES
+// ============================================================================
+
+model UserPreferences {
+  id     String @id @default(cuid())
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Display Settings
+  theme       String  @default("light")
+  language    String  @default("en")
+  dateFormat  String  @default("DD/MM/YYYY") @map("date_format")
+  timeFormat  String  @default("12h") @map("time_format")
+  compactMode Boolean @default(false) @map("compact_mode")
+
+  // Notification Preferences
+  emailNotifications Boolean @default(true) @map("email_notifications")
+  smsNotifications   Boolean @default(false) @map("sms_notifications")
+  pushNotifications  Boolean @default(true) @map("push_notifications")
+
+  // Notification Types
+  notifyNewOrders     Boolean @default(true) @map("notify_new_orders")
+  notifyOrderComplete Boolean @default(true) @map("notify_order_complete")
+  notifyLowStock      Boolean @default(true) @map("notify_low_stock")
+  notifyMarketing     Boolean @default(false) @map("notify_marketing")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_preferences")
+}
+
+// ============================================================================
+// BUSINESS (Franchise Brand)
+// ============================================================================
+
+model Business {
+  id           String  @id @default(cuid())
+  businessName String  @map("business_name")
+  address      String?
+  phone        String?
+  email        String?
+  logoUrl      String? @map("logo_url")
+  gstNumber    String? @map("gst_number") @db.VarChar(15)
+
+  // Plan & Status
+  planType           BusinessPlan @default(TRIAL) @map("plan_type")
+  planStatus         PlanStatus   @default(TRIAL) @map("plan_status")
+  trialEndsAt        DateTime?    @map("trial_ends_at")
+  subscriptionEndsAt DateTime?    @map("subscription_ends_at")
+
+  // Relations
+  user           User?
+  settings       BusinessSettings?
+  stores         Store[]
+  customers      Customer[]
+  services       Service[]
+  items          Item[]
+  treatments     Treatment[]
+  staff          Staff[]
+  orders         Order[]
+  inventoryItems InventoryItem[]
+  expenses       Expense[]
+  notifications  Notification[]
+  subscription   Subscription?
+  operatingHours BusinessOperatingHours?
+  drivers        Driver[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([planType])
+  @@index([planStatus])
+  @@map("businesses")
+}
+
+enum BusinessPlan {
+  TRIAL
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum PlanStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+// ============================================================================
+// BUSINESS SETTINGS (Feature Flags)
+// ============================================================================
+
+model BusinessSettings {
+  id         String   @id @default(cuid())
+  businessId String   @unique @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Feature Toggles
+  workshopEnabled   Boolean @default(false) @map("workshop_enabled")
+  multiStoreEnabled Boolean @default(false) @map("multi_store_enabled")
+  deliveryEnabled   Boolean @default(true) @map("delivery_enabled")
+  pickupEnabled     Boolean @default(true) @map("pickup_enabled")
+
+  // Limits
+  maxStores        Int @default(1) @map("max_stores")
+  maxStaff         Int @default(5) @map("max_staff")
+  maxMonthlyOrders Int @default(100) @map("max_monthly_orders")
+
+  // Additional Features
+  smsNotifications    Boolean @default(false) @map("sms_notifications")
+  emailNotifications  Boolean @default(true) @map("email_notifications")
+  whatsappIntegration Boolean @default(false) @map("whatsapp_integration")
+  advancedReports     Boolean @default(false) @map("advanced_reports")
+
+  // Customization
+  currency   String @default("INR")
+  timezone   String @default("Asia/Kolkata")
+  dateFormat String @default("DD/MM/YYYY") @map("date_format")
+  timeFormat String @default("12h") @map("time_format")
+
+  // Express Pricing Settings
+  expressMultiplier Decimal @default(1.5) @map("express_multiplier") @db.Decimal(3, 2)
+
+   // GST Settings
+  gstEnabled    Boolean @default(false) @map("gst_enabled")
+  gstPercentage Decimal @default(18) @map("gst_percentage") @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("business_settings")
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Notification Content
+  type    NotificationType
+  title   String
+  message String           @db.Text
+  data    Json?
+
+  // Status
+  isRead Boolean   @default(false) @map("is_read")
+  readAt DateTime? @map("read_at")
+
+  // Targeting (optional - for user-specific notifications)
+  userId String? @map("user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([businessId])
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  ORDER_CREATED
+  ORDER_COMPLETED
+  ORDER_READY
+  PAYMENT_RECEIVED
+  LOW_STOCK
+  CUSTOMER_CREATED
+  SYSTEM
+  REMINDER
+}
+
+// ============================================================================
+// STORES (Independent Franchise Locations)
+// ============================================================================
+
+model Store {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name     String
+  address  String?
+  phone    String?
+  isActive Boolean @default(true) @map("is_active")
+
+  // Relations
+  orders           Order[]
+  orderItems       OrderItem[]
+  storeServices    StoreService[]
+  storeItemPrices  StoreItemPrice[]
+  staffAssignments StaffAssignment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@index([isActive])
+  @@map("stores")
+}
+
+// ============================================================================
+// CUSTOMERS (Shared Across All Stores)
+// ============================================================================
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  fullName String  @map("full_name")
+  email    String?
+  phone    String
+  address  String?
+
+  // Additional Info
+  notes String?  @db.Text
+  tags  String[] @default([])
+
+  // Analytics (auto-updated on orders)
+  lastOrderDate DateTime? @map("last_order_date")
+  totalOrders   Int       @default(0) @map("total_orders")
+  totalSpent    Decimal   @default(0) @map("total_spent") @db.Decimal(10, 2)
+
+  // Customer App Authentication
+  passwordHash     String?   @map("password_hash")
+  isAppEnabled     Boolean   @default(true) @map("is_app_enabled")
+  appRegisteredAt  DateTime? @map("app_registered_at")
+  
+  // Push Notifications (Expo)
+  expoPushToken    String?   @map("expo_push_token")
+  pushEnabled      Boolean   @default(true) @map("push_enabled")
+
+  // Soft Delete
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  orders Order[]
+  addresses     CustomerAddress[]
+  refreshTokens CustomerRefreshToken[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([businessId, phone])
+  @@index([businessId])
+  @@index([phone])
+  @@index([deletedAt])
+  @@map("customers")
+}
+
+// ============================================================================
+// ITEMS (What customers bring - Shirt, Pants, Bedsheet, etc.)
+// ============================================================================
+
+model Item {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  category    ItemCategory @default(GARMENT)
+
+  // Icon - Cloudinary URL
+  iconUrl String? @map("icon_url")
+
+  // Status
+  isActive  Boolean   @default(true) @map("is_active")
+  sortOrder Int       @default(0) @map("sort_order")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  prices          ItemTreatmentPrice[]
+  storeItemPrices StoreItemPrice[]
+  orderItems      OrderItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([businessId, name, deletedAt])
+  @@index([businessId])
+  @@index([category])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("items")
+}
+
+enum ItemCategory {
+  GARMENT
+  HOUSEHOLD
+  SPECIALTY
+}
+
+// ============================================================================
+// TREATMENTS (What you do - Wash, Iron, Dry Clean, etc.)
+// ============================================================================
+
+model Treatment {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name        String
+  code        String
+  description String?
+  iconUrl     String? @map("icon_url")
+
+  // Is this a combo treatment? (Wash+Iron is combo of Wash and Iron)
+  isCombo Boolean @default(false) @map("is_combo")
+
+  // Default turnaround time for this treatment
+  turnaroundHours Int @default(24) @map("turnaround_hours")
+
+  // Status
+  isActive  Boolean @default(true) @map("is_active")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  prices     ItemTreatmentPrice[]
+  orderItems OrderItem[]
+
+  @@unique([businessId, code])
+  @@index([businessId])
+  @@index([isActive])
+  @@map("treatments")
+}
+
+// ============================================================================
+// ITEM-TREATMENT PRICING (The Matrix!)
+// ============================================================================
+
+model ItemTreatmentPrice {
+  id          String @id @default(cuid())
+  businessId  String @map("business_id")
+  itemId      String @map("item_id")
+  treatmentId String @map("treatment_id")
+
+  // Pricing
+  price        Decimal  @db.Decimal(10, 2)
+  expressPrice Decimal? @map("express_price") @db.Decimal(10, 2)
+
+  // Availability
+  isAvailable Boolean @default(true) @map("is_available")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  treatment Treatment @relation(fields: [treatmentId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, itemId, treatmentId])
+  @@index([itemId])
+  @@index([treatmentId])
+  @@index([isAvailable])
+  @@map("item_treatment_prices")
+}
+
+// ============================================================================
+// STORE-SPECIFIC ITEM PRICE OVERRIDES (Optional)
+// ============================================================================
+
+model StoreItemPrice {
+  id          String @id @default(cuid())
+  storeId     String @map("store_id")
+  itemId      String @map("item_id")
+  treatmentId String @map("treatment_id")
+
+  // Override pricing for this store
+  price        Decimal  @db.Decimal(10, 2)
+  expressPrice Decimal? @map("express_price") @db.Decimal(10, 2)
+  isAvailable  Boolean  @default(true) @map("is_available")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  item  Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, itemId, treatmentId])
+  @@index([storeId])
+  @@index([itemId])
+  @@map("store_item_prices")
+}
+
+// ============================================================================
+// SERVICE ICONS LIBRARY (Predefined Icons for Selection)
+// ============================================================================
+
+model ServiceIcon {
+  id       String       @id @default(cuid())
+  name     String
+  imageUrl String       @unique @map("image_url")
+  category ItemCategory
+  tags     String[]     @default([])
+
+  // Display & Status
+  sortOrder Int     @default(0) @map("sort_order")
+  isPremium Boolean @default(false) @map("is_premium")
+  isActive  Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("service_icons")
+}
+
+// ============================================================================
+// LEGACY: SERVICES (Keep for backward compatibility during migration)
+// ============================================================================
+
+model Service {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  category    ItemCategory @default(GARMENT)
+
+  // Icon - Simple Cloudinary URL
+  iconUrl String? @map("icon_url")
+
+  // Pricing
+  basePrice    Decimal  @map("base_price") @db.Decimal(10, 2)
+  expressPrice Decimal? @map("express_price") @db.Decimal(10, 2)
+  unit         String   @default("piece")
+
+  // Processing
+  turnaroundTime Int      @default(24) @map("turnaround_time")
+  serviceTypes   String[] @default([]) @map("service_types")
+
+  // Status
+  isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  storeServices StoreService[]
+  orderItems    OrderItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@index([isActive])
+  @@index([category])
+  @@index([deletedAt])
+  @@map("services")
+}
+
+// ============================================================================
+// LEGACY: STORE SERVICES (Per-Store Pricing Override)
+// ============================================================================
+
+model StoreService {
+  id        String  @id @default(cuid())
+  storeId   String  @map("store_id")
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  serviceId String  @map("service_id")
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  price       Decimal @db.Decimal(10, 2)
+  isAvailable Boolean @default(true) @map("is_available")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([storeId, serviceId])
+  @@index([storeId])
+  @@index([serviceId])
+  @@map("store_services")
+}
+
+// ============================================================================
+// STAFF (Can Work at Multiple Stores)
+// ============================================================================
+
+model Staff {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  fullName String  @map("full_name")
+  email    String?
+  phone    String?
+  role     String?
+  isActive Boolean @default(true) @map("is_active")
+
+  assignments StaffAssignment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@map("staff")
+}
+
+model StaffAssignment {
+  id      String @id @default(cuid())
+  staffId String @map("staff_id")
+  staff   Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  storeId String @map("store_id")
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  @@unique([staffId, storeId])
+  @@map("staff_assignments")
+}
+
+// ============================================================================
+// ORDERS
+// ============================================================================
+
+model Order {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id])
+  storeId    String   @map("store_id")
+  store      Store    @relation(fields: [storeId], references: [id])
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  orderNumber String      @unique @map("order_number")
+  orderType   OrderType   @default(WALKIN) @map("order_type")
+  status      OrderStatus @default(IN_PROGRESS)
+
+  // Amount Breakdown
+  subtotal    Decimal? @db.Decimal(10, 2)
+  discount    Decimal? @db.Decimal(10, 2)
+  
+  // GST Fields
+  gstEnabled    Boolean  @default(false) @map("gst_enabled")
+  gstPercentage Decimal? @map("gst_percentage") @db.Decimal(5, 2)
+  gstAmount     Decimal? @map("gst_amount") @db.Decimal(10, 2)
+  
+  // Legacy tax field (kept for backward compatibility)
+  tax         Decimal? @db.Decimal(10, 2)
+  
+  // Final amounts
+  totalAmount Decimal  @map("total_amount") @db.Decimal(10, 2)
+  paidAmount  Decimal  @default(0) @map("paid_amount") @db.Decimal(10, 2)
+
+  // Payment
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
+  paymentMode   PaymentMode?  @map("payment_mode")
+
+  // Dates
+  pickupDate    DateTime? @map("pickup_date")
+  deliveryDate  DateTime? @map("delivery_date")
+  completedDate DateTime? @map("completed_date")
+
+  // Additional Info
+  specialInstructions String?       @map("special_instructions") @db.Text
+  assignedTo          String?       @map("assigned_to")
+  priority            OrderPriority @default(NORMAL)
+
+  // Re-work Tracking
+  isRework     Boolean @default(false) @map("is_rework")
+  reworkCount  Int     @default(0) @map("rework_count")
+  reworkReason String? @map("rework_reason")
+
+  driverId         String?
+  assignedAt       DateTime?
+  pickedUpAt       DateTime?
+  deliveredAt      DateTime?
+  
+  // Customer Address (for pickup/delivery orders)
+  addressId        String?          @map("address_id")
+  customerAddress  CustomerAddress? @relation(fields: [addressId], references: [id], onDelete: SetNull)
+
+  // Relations
+  items         OrderItem[]
+  payments      Payment[]
+  statusHistory OrderStatusHistory[]
+  driver           Driver?   @relation("AssignedDriver", fields: [driverId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@index([storeId])
+  @@index([customerId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([deliveryDate])
+  @@index([addressId])
+  @@index([isRework])
+  @@map("orders")
+}
+enum OrderType {
+  PICKUP
+  WALKIN
+}
+
+enum OrderStatus {
+  PICKUP
+  IN_PROGRESS
+  AT_WORKSHOP
+  WORKSHOP_RETURNED
+  READY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+enum PaymentMode {
+  CASH
+  CARD
+  UPI
+  ONLINE
+}
+
+enum OrderPriority {
+  NORMAL
+  EXPRESS
+}
+
+// ============================================================================
+// ORDER ITEMS (Updated to reference Item + Treatment + Legacy Service)
+// ============================================================================
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  storeId String @map("store_id")
+  store   Store  @relation(fields: [storeId], references: [id])
+
+  // NEW: Reference both Item and Treatment
+  itemId      String?    @map("item_id")
+  item        Item?      @relation(fields: [itemId], references: [id])
+  treatmentId String?    @map("treatment_id")
+  treatment   Treatment? @relation(fields: [treatmentId], references: [id])
+
+  // LEGACY: Service reference (for backward compatibility)
+  serviceId String?  @map("service_id")
+  service   Service? @relation(fields: [serviceId], references: [id])
+
+  // Item Details
+  tagNumber     String  @unique @map("tag_number")
+  itemName      String  @map("item_name")
+  treatmentName String? @map("treatment_name")
+  quantity      Int     @default(1)
+  color         String?
+  brand         String?
+  notes         String?
+
+  // Status & Pricing
+  status    ItemStatus @default(RECEIVED)
+  unitPrice Decimal    @map("unit_price") @db.Decimal(10, 2)
+  subtotal  Decimal    @db.Decimal(10, 2)
+  isExpress Boolean    @default(false) @map("is_express")
+
+  // Workshop Tracking (External Partners Only)
+  sentToWorkshop       Boolean   @default(false) @map("sent_to_workshop")
+  workshopPartnerName  String?   @map("workshop_partner_name")
+  workshopSentDate     DateTime? @map("workshop_sent_date")
+  workshopReturnedDate DateTime? @map("workshop_returned_date")
+  workshopNotes        String?   @map("workshop_notes")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@index([storeId])
+  @@index([itemId])
+  @@index([treatmentId])
+  @@index([serviceId])
+  @@index([tagNumber])
+  @@index([status])
+  @@index([sentToWorkshop])
+  @@map("order_items")
+}
+
+enum ItemStatus {
+  RECEIVED
+  IN_PROGRESS
+  AT_WORKSHOP
+  WORKSHOP_RETURNED
+  READY
+  COMPLETED
+}
+
+// ============================================================================
+// PAYMENTS
+// ============================================================================
+
+model Payment {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  amount    Decimal     @db.Decimal(10, 2)
+  mode      PaymentMode
+  reference String?
+  notes     String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@map("payments")
+}
+
+// ============================================================================
+// ORDER STATUS HISTORY
+// ============================================================================
+
+model OrderStatusHistory {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  fromStatus OrderStatus? @map("from_status")
+  toStatus   OrderStatus  @map("to_status")
+  changedBy  String?      @map("changed_by")
+  notes      String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("order_status_history")
+}
+
+// ============================================================================
+// NEXTAUTH MODELS
+// ============================================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================================
+// INVENTORY MANAGEMENT
+// ============================================================================
+
+model InventoryItem {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  storeId    String?  @map("store_id")
+
+  // Basic Info
+  name        String
+  description String?
+  sku         String?
+  category    InventoryCategory @default(DETERGENT)
+
+  // Stock Management
+  currentStock Int    @default(0) @map("current_stock")
+  minStock     Int    @default(10) @map("min_stock")
+  maxStock     Int?   @map("max_stock")
+  unit         String @default("pieces")
+
+  // Pricing
+  costPerUnit Decimal @map("cost_per_unit") @db.Decimal(10, 2)
+
+  // Supplier Info
+  supplier      String?
+  supplierPhone String? @map("supplier_phone")
+  supplierEmail String? @map("supplier_email")
+
+  // Tracking
+  lastRestockedAt DateTime? @map("last_restocked_at")
+  lastRestockedBy String?   @map("last_restocked_by")
+
+  // Status
+  isActive  Boolean   @default(true) @map("is_active")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  restockHistory InventoryRestockLog[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([businessId, sku])
+  @@index([businessId])
+  @@index([storeId])
+  @@index([category])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("inventory_items")
+}
+
+model InventoryRestockLog {
+  id              String        @id @default(cuid())
+  inventoryItemId String        @map("inventory_item_id")
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  // Restock Details
+  previousStock Int     @map("previous_stock")
+  addedStock    Int     @map("added_stock")
+  newStock      Int     @map("new_stock")
+  costPerUnit   Decimal @map("cost_per_unit") @db.Decimal(10, 2)
+  totalCost     Decimal @map("total_cost") @db.Decimal(10, 2)
+  notes         String?
+  restockedBy   String? @map("restocked_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([inventoryItemId])
+  @@index([createdAt])
+  @@map("inventory_restock_logs")
+}
+
+enum InventoryCategory {
+  DETERGENT
+  SOFTENER
+  BLEACH
+  PACKAGING
+  EQUIPMENT
+  CHEMICALS
+  ACCESSORIES
+  OTHER
+}
+
+// ============================================================================
+// EXPENSES
+// ============================================================================
+
+model Expense {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  storeId    String?  @map("store_id")
+
+  // Basic Info
+  description String
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(10, 2)
+  date        DateTime        @default(now())
+
+  // Payment Details
+  paymentMethod ExpensePaymentMethod @map("payment_method")
+  vendor        String?
+  receipt       String?
+
+  // Additional
+  notes     String? @db.Text
+  createdBy String? @map("created_by")
+
+  // Soft Delete
+  deletedAt DateTime? @map("deleted_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@index([storeId])
+  @@index([category])
+  @@index([date])
+  @@index([deletedAt])
+  @@map("expenses")
+}
+
+enum ExpenseCategory {
+  UTILITIES
+  SUPPLIES
+  MAINTENANCE
+  SALARIES
+  MARKETING
+  RENT
+  EQUIPMENT
+  OTHER
+}
+
+enum ExpensePaymentMethod {
+  CASH
+  CARD
+  UPI
+  BANK_TRANSFER
+}
+
+// ============================================================================
+// SUBSCRIPTIONS & PAYMENTS
+// ============================================================================
+
+model Subscription {
+  id         String   @id @default(cuid())
+  businessId String   @unique @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Plan Details
+  planType     BusinessPlan @map("plan_type")
+  billingCycle BillingCycle @map("billing_cycle")
+  
+  // Pricing (stored at time of subscription for audit)
+  amount       Decimal @db.Decimal(10, 2)
+  currency     String  @default("INR")
+  
+  // Razorpay Details
+  razorpaySubscriptionId String? @unique @map("razorpay_subscription_id")
+  razorpayCustomerId     String? @map("razorpay_customer_id")
+  
+  // Status & Dates
+  status           SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime          @map("current_period_start")
+  currentPeriodEnd   DateTime          @map("current_period_end")
+  cancelledAt        DateTime?         @map("cancelled_at")
+  cancelReason       String?           @map("cancel_reason")
+  
+  // Trial Info
+  trialStart DateTime? @map("trial_start")
+  trialEnd   DateTime? @map("trial_end")
+
+  // Relations
+  payments SubscriptionPayment[]
+  invoices Invoice[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([businessId])
+  @@index([status])
+  @@index([razorpaySubscriptionId])
+  @@map("subscriptions")
+}
+
+model SubscriptionPayment {
+  id             String       @id @default(cuid())
+  subscriptionId String       @map("subscription_id")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  // Payment Details
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("INR")
+  status   PaymentStatusType @default(PENDING)
+
+  // Razorpay Details
+  razorpayPaymentId  String? @unique @map("razorpay_payment_id")
+  razorpayOrderId    String? @map("razorpay_order_id")
+  razorpaySignature  String? @map("razorpay_signature")
+  
+  // Payment Method Info
+  paymentMethod String? @map("payment_method")
+  cardLast4     String? @map("card_last4")
+  cardBrand     String? @map("card_brand")
+  bank          String?
+  wallet        String?
+  vpa           String? // UPI VPA
+  
+  // Metadata
+  description  String?
+  failureCode  String? @map("failure_code")
+  failureMessage String? @map("failure_message")
+
+  // Dates
+  paidAt DateTime? @map("paid_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([subscriptionId])
+  @@index([razorpayPaymentId])
+  @@index([status])
+  @@map("subscription_payments")
+}
+
+model Invoice {
+  id             String       @id @default(cuid())
+  subscriptionId String       @map("subscription_id")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  // Invoice Details
+  invoiceNumber String  @unique @map("invoice_number")
+  amount        Decimal @db.Decimal(10, 2)
+  tax           Decimal @default(0) @db.Decimal(10, 2)
+  totalAmount   Decimal @map("total_amount") @db.Decimal(10, 2)
+  currency      String  @default("INR")
+  
+  // Status
+  status InvoiceStatus @default(DRAFT)
+  
+  // Dates
+  invoiceDate DateTime  @map("invoice_date")
+  dueDate     DateTime  @map("due_date")
+  paidAt      DateTime? @map("paid_at")
+  
+  // PDF Storage
+  pdfUrl String? @map("pdf_url")
+  
+  // Razorpay
+  razorpayInvoiceId String? @unique @map("razorpay_invoice_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@map("invoices")
+}
+
+enum BillingCycle {
+  MONTHLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+  PAUSED
+}
+
+enum PaymentStatusType {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+// ============================================================================
+// CUSTOMER APP MODELS
+// ============================================================================
+
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  label       String
+  fullAddress String  @map("full_address")
+  landmark    String?
+  city        String
+  pincode     String
+  latitude    Float?
+  longitude   Float?
+
+  isDefault Boolean @default(false) @map("is_default")
+  orders Order[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+// ============================================================================
+// CUSTOMER REFRESH TOKENS (For mobile JWT auth)
+// ============================================================================
+
+model CustomerRefreshToken {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  token      String   @unique
+  deviceInfo String?  @map("device_info")
+  isValid    Boolean  @default(true) @map("is_valid")
+  expiresAt  DateTime @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([customerId])
+  @@index([token])
+  @@map("customer_refresh_tokens")
+}
+
+// ============================================================================
+// BUSINESS OPERATING HOURS (For pickup scheduling)
+// ============================================================================
+
+model BusinessOperatingHours {
+  id         String   @id @default(cuid())
+  businessId String   @unique @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Operating Days (1 = Monday, 7 = Sunday)
+  operatingDays Int[] @default([1, 2, 3, 4, 5, 6]) @map("operating_days")
+
+  // Time Slots (JSON array)
+  timeSlots Json @default("[{\"id\":\"morning\",\"label\":\"Morning\",\"startTime\":\"09:00\",\"endTime\":\"12:00\"},{\"id\":\"afternoon\",\"label\":\"Afternoon\",\"startTime\":\"12:00\",\"endTime\":\"15:00\"},{\"id\":\"evening\",\"label\":\"Evening\",\"startTime\":\"15:00\",\"endTime\":\"18:00\"},{\"id\":\"late_evening\",\"label\":\"Late Evening\",\"startTime\":\"18:00\",\"endTime\":\"21:00\"}]") @map("time_slots")
+
+  // Pickup Settings
+  minPickupHoursAdvance Int @default(2) @map("min_pickup_hours_advance")
+  maxPickupDaysAdvance  Int @default(7) @map("max_pickup_days_advance")
+
+  // App Settings
+  allowCustomerApp Boolean @default(true) @map("allow_customer_app")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("business_operating_hours")
+}
+
+// ==================== DRIVER MODELS ====================
+
+model Driver {
+  id           String   @id @default(cuid())
+  businessId   String
+  phone        String
+  passwordHash String
+  fullName     String
+  email        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  business      Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  refreshTokens DriverRefreshToken[]
+  assignedOrders Order[]             @relation("AssignedDriver")
+
+  @@unique([businessId, phone])
+  @@index([businessId])
+}
+
+model DriverRefreshToken {
+  id         String   @id @default(cuid())
+  driverId   String
+  token      String   @unique
+  deviceInfo String?
+  expiresAt  DateTime
+  isValid    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+
+  @@index([driverId])
+}

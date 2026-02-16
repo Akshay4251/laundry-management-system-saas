@@ -1,3 +1,4 @@
+//app/(dashboard)/settings/stores/page.tsx
 import { CreateStoreModal } from "@/components/stores/create-store-modal";
 import { StoreCard } from "@/components/stores/store-card";
 import { Button } from "@/components/ui/button";

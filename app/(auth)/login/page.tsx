@@ -1,3 +1,4 @@
+// app/(auth)/login/page.tsx
 import LoginForm from "@/components/auth/login-form";
 import Link from "next/link";
 import { 
@@ -31,7 +32,7 @@ export default function LoginPage() {
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                LaundryPro
+                WashNDry
               </span>
             </Link>
             
@@ -115,7 +116,7 @@ export default function LoginPage() {
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
               Welcome Back to{" "}
               <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                LaundryPro
+                WashNDry
               </span>
             </h1>
             

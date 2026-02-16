@@ -1,3 +1,4 @@
+//components/stores/store-card.tsx
 import { Store as StoreIcon, MapPin, Phone, MoreVertical, Edit, Trash2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

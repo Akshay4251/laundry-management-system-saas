@@ -1,35 +1,98 @@
+// components/auth/register-form.tsx
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Loader2, Building2, User, Mail, Phone, Lock } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Building2,
+  User,
+  Mail,
+  Phone,
+  Lock,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
 const RegisterForm = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     businessName: "",
     fullName: "",
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-    // Simulate API call
-    setTimeout(() => {
+    // Validation
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters");
       setIsLoading(false);
-      // TODO: Replace with actual registration
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Register user
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+          full_name: formData.fullName.trim(),
+          business_name: formData.businessName.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Registration failed");
+        setIsLoading(false);
+        return;
+      }
+
+      // Auto-login after registration
+      const signInResult = await signIn("credentials", {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        router.push("/login?registered=true");
+        return;
+      }
+
       router.push("/dashboard");
-    }, 2000);
+      router.refresh();
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError("An error occurred. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,6 +104,14 @@ const RegisterForm = () => {
 
   return (
     <div className="space-y-6">
+      {/* Error Alert */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-800 font-medium">{error}</p>
+        </div>
+      )}
+
       {/* Registration Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -106,7 +177,7 @@ const RegisterForm = () => {
 
         <div className="space-y-2">
           <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
-            Phone Number
+            Phone Number (Optional)
           </Label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -114,8 +185,7 @@ const RegisterForm = () => {
               id="phone"
               name="phone"
               type="tel"
-              required
-              placeholder="+1 (555) 000-0000"
+              placeholder="+91 98765 43210"
               value={formData.phone}
               onChange={handleChange}
               disabled={isLoading}
@@ -146,16 +216,56 @@ const RegisterForm = () => {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
             >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          <p className="text-xs text-gray-500">
-            Must be at least 8 characters with numbers and letters
-          </p>
+          {formData.password && (
+            <div className="flex items-center gap-2 mt-2">
+              {formData.password.length >= 6 ? (
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-orange-600" />
+              )}
+              <span className={`text-xs ${formData.password.length >= 6 ? "text-green-600" : "text-orange-600"}`}>
+                Minimum 6 characters
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+            Confirm Password
+          </Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              required
+              placeholder="••••••••"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              disabled={isLoading}
+              className="pl-10 h-12 border-2 focus:border-blue-500 transition-colors"
+            />
+          </div>
+          {formData.confirmPassword && (
+            <div className="flex items-center gap-2 mt-2">
+              {formData.password === formData.confirmPassword ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  <span className="text-xs text-green-600">Passwords match</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <span className="text-xs text-red-600">Passwords do not match</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-start">

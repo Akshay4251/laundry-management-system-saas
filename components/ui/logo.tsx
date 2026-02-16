@@ -30,7 +30,7 @@ export const Logo = ({ size = "md", showText = true, className = "" }: LogoProps
       {showText && (
         <div className="flex flex-col">
           <span className={`${currentSize.text} font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-gray-900 bg-clip-text text-transparent tracking-tight`}>
-            LaundryPro
+            WashNDry
           </span>
           <span className="text-xs text-gray-500 font-medium -mt-1">Smart Management</span>
         </div>

@@ -1,146 +1,127 @@
+// app/(dashboard)/calendar/page.tsx
+
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
-  ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon,
-  Clock, User, Package, MoreHorizontal, ChevronDown, Check
+  ChevronLeft, ChevronRight, Calendar as CalendarIcon,
+  Clock, Package, MoreHorizontal, ChevronDown, Check,
+  Phone, Truck, Factory, Loader2, AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  type: 'delivery' | 'pickup' | 'workshop_return' | 'appointment';
-  time: string;
-  customer?: string;
-  orderId?: string;
-}
-
-const MOCK_EVENTS: Record<string, CalendarEvent[]> = {
-  // November 2025
-  '2025-11-03': [
-    { id: 'nov1', title: 'Pickup - Rajesh Kumar', type: 'pickup', time: '09:00 AM', customer: 'Rajesh Kumar', orderId: 'ORD-2025-001' },
-    { id: 'nov2', title: 'Delivery - Priya Sharma', type: 'delivery', time: '02:00 PM', customer: 'Priya Sharma', orderId: 'ORD-2025-002' },
-  ],
-  '2025-11-05': [
-    { id: 'nov3', title: 'Workshop Return Expected', type: 'workshop_return', time: '11:00 AM', orderId: 'ORD-2025-003' },
-  ],
-  '2025-11-07': [
-    { id: 'nov4', title: 'Delivery - Amit Patel', type: 'delivery', time: '10:30 AM', customer: 'Amit Patel', orderId: 'ORD-2025-004' },
-    { id: 'nov5', title: 'Customer Consultation', type: 'appointment', time: '03:00 PM', customer: 'New Customer' },
-  ],
-  '2025-11-10': [
-    { id: 'nov6', title: 'Pickup - Sneha Reddy', type: 'pickup', time: '09:00 AM', customer: 'Sneha Reddy', orderId: 'ORD-2025-005' },
-  ],
-  '2025-11-12': [
-    { id: 'nov7', title: 'Delivery - Vikram Singh', type: 'delivery', time: '11:00 AM', customer: 'Vikram Singh', orderId: 'ORD-2025-006' },
-    { id: 'nov8', title: 'Wedding Dress Pickup', type: 'pickup', time: '04:00 PM', customer: 'Ananya Iyer', orderId: 'ORD-2025-007' },
-  ],
-  '2025-11-14': [
-    { id: 'nov9', title: 'Bulk Order Pickup', type: 'pickup', time: '08:00 AM', customer: 'Hotel Grand Plaza', orderId: 'ORD-2025-008' },
-  ],
-  '2025-11-17': [
-    { id: 'nov10', title: 'Delivery - Kavya Nair', type: 'delivery', time: '10:00 AM', customer: 'Kavya Nair', orderId: 'ORD-2025-009' },
-    { id: 'nov11', title: 'Workshop Return', type: 'workshop_return', time: '01:00 PM', orderId: 'ORD-2025-010' },
-  ],
-  '2025-11-19': [
-    { id: 'nov12', title: 'Pickup - Rohan Desai', type: 'pickup', time: '09:30 AM', customer: 'Rohan Desai', orderId: 'ORD-2025-011' },
-  ],
-  '2025-11-21': [
-    { id: 'nov13', title: 'Delivery - Meera Krishnan', type: 'delivery', time: '11:30 AM', customer: 'Meera Krishnan', orderId: 'ORD-2025-012' },
-    { id: 'nov14', title: 'Quality Check Appointment', type: 'appointment', time: '03:00 PM', customer: 'QC Team' },
-  ],
-  '2025-11-24': [
-    { id: 'nov15', title: 'Restaurant Linens Pickup', type: 'pickup', time: '07:00 AM', customer: 'The Blue Lotus', orderId: 'ORD-2025-013' },
-    { id: 'nov16', title: 'Delivery - Sanjay Gupta', type: 'delivery', time: '02:30 PM', customer: 'Sanjay Gupta', orderId: 'ORD-2025-014' },
-  ],
-  '2025-11-26': [
-    { id: 'nov17', title: 'Workshop Return', type: 'workshop_return', time: '12:00 PM', orderId: 'ORD-2025-015' },
-  ],
-  '2025-11-28': [
-    { id: 'nov18', title: 'Pickup - Deepika Rao', type: 'pickup', time: '09:00 AM', customer: 'Deepika Rao', orderId: 'ORD-2025-016' },
-    { id: 'nov19', title: 'Delivery - Aditya Kumar', type: 'delivery', time: '04:00 PM', customer: 'Aditya Kumar', orderId: 'ORD-2025-017' },
-    { id: 'nov20', title: 'Business Consultation', type: 'appointment', time: '05:30 PM', customer: 'Corporate Client' },
-  ],
-
-  // December 2025
-  '2025-12-01': [
-    { id: 'dec1', title: 'Month Start Pickup', type: 'pickup', time: '08:00 AM', customer: 'Neha Kapoor', orderId: 'ORD-2025-018' },
-  ],
-  '2025-12-03': [
-    { id: 'dec2', title: 'Delivery - Karthik Subramanian', type: 'delivery', time: '10:00 AM', customer: 'Karthik Subramanian', orderId: 'ORD-2025-019' },
-    { id: 'dec3', title: 'Workshop Return', type: 'workshop_return', time: '02:00 PM', orderId: 'ORD-2025-020' },
-  ],
-  '2025-12-05': [
-    { id: 'dec4', title: 'Pickup - Pooja Malhotra', type: 'pickup', time: '09:30 AM', customer: 'Pooja Malhotra', orderId: 'ORD-2025-021' },
-  ],
-  '2025-12-08': [
-    { id: 'dec5', title: 'Delivery - Rahul Verma', type: 'delivery', time: '11:00 AM', customer: 'Rahul Verma', orderId: 'ORD-2025-022' },
-    { id: 'dec6', title: 'Corporate Pickup', type: 'pickup', time: '03:00 PM', customer: 'Tech Park Plaza', orderId: 'ORD-2025-023' },
-  ],
-  '2025-12-10': [
-    { id: 'dec7', title: 'Winter Collection Consultation', type: 'appointment', time: '11:00 AM', customer: 'Fashion Event' },
-  ],
-  '2025-12-12': [
-    { id: 'dec8', title: 'Delivery - Simran Singh', type: 'delivery', time: '10:00 AM', customer: 'Simran Singh', orderId: 'ORD-2025-024' },
-    { id: 'dec9', title: 'Workshop Return', type: 'workshop_return', time: '01:30 PM', orderId: 'ORD-2025-025' },
-  ],
-  '2025-12-15': [
-    { id: 'dec10', title: 'Pickup - Harish Patel', type: 'pickup', time: '09:00 AM', customer: 'Harish Patel', orderId: 'ORD-2025-026' },
-    { id: 'dec11', title: 'Delivery - Lakshmi Menon', type: 'delivery', time: '02:00 PM', customer: 'Lakshmi Menon', orderId: 'ORD-2025-027' },
-  ],
-  '2025-12-17': [
-    { id: 'dec12', title: 'Hotel Linens Bulk Pickup', type: 'pickup', time: '07:00 AM', customer: 'Luxury Hotel', orderId: 'ORD-2025-028' },
-  ],
-  '2025-12-19': [
-    { id: 'dec13', title: 'Delivery - Suresh Rajan', type: 'delivery', time: '10:30 AM', customer: 'Suresh Rajan', orderId: 'ORD-2025-029' },
-    { id: 'dec14', title: 'Year-End Review Meeting', type: 'appointment', time: '04:00 PM', customer: 'Management' },
-  ],
-  '2025-12-22': [
-    { id: 'dec15', title: 'Pickup - Anjali Deshmukh', type: 'pickup', time: '09:00 AM', customer: 'Anjali Deshmukh', orderId: 'ORD-2025-030' },
-    { id: 'dec16', title: 'Workshop Return', type: 'workshop_return', time: '12:00 PM', orderId: 'ORD-2025-031' },
-  ],
-  '2025-12-24': [
-    { id: 'dec17', title: 'Christmas Eve Delivery', type: 'delivery', time: '09:00 AM', customer: 'Madhav Krishna', orderId: 'ORD-2025-032' },
-    { id: 'dec18', title: 'Holiday Special Pickup', type: 'pickup', time: '11:00 AM', customer: 'Varun Malhotra', orderId: 'ORD-2025-033' },
-  ],
-  '2025-12-26': [
-    { id: 'dec19', title: 'Delivery - Divya Nambiar', type: 'delivery', time: '10:00 AM', customer: 'Divya Nambiar', orderId: 'ORD-2025-034' },
-  ],
-  '2025-12-29': [
-    { id: 'dec20', title: 'Pickup - Ravi Shankar', type: 'pickup', time: '09:30 AM', customer: 'Ravi Shankar', orderId: 'ORD-2025-035' },
-    { id: 'dec21', title: 'Workshop Return', type: 'workshop_return', time: '02:00 PM', orderId: 'ORD-2025-036' },
-  ],
-  '2025-12-31': [
-    { id: 'dec22', title: 'New Year Eve Delivery', type: 'delivery', time: '08:00 AM', customer: 'Jennifer Martin', orderId: 'ORD-2025-037' },
-    { id: 'dec23', title: 'Year-End Consultation', type: 'appointment', time: '03:00 PM', customer: 'VIP Client' },
-    { id: 'dec24', title: 'Final Pickup of Year', type: 'pickup', time: '05:00 PM', customer: 'Sarah Johnson', orderId: 'ORD-2025-038' },
-  ],
-};
+import { useCalendarEvents, groupEventsByDate, getLocalDateString, isSameDay } from '@/app/hooks/use-calendar';
+import { EVENT_TYPE_CONFIG, type CalendarEvent, type CalendarEventType } from '@/app/types/calendar';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const EVENT_TYPES = {
-  delivery: { color: 'bg-blue-600', label: 'Delivery', lightBg: 'bg-blue-50', text: 'text-blue-700' },
-  pickup: { color: 'bg-green-600', label: 'Pickup', lightBg: 'bg-green-50', text: 'text-green-700' },
-  workshop_return: { color: 'bg-orange-600', label: 'Workshop Return', lightBg: 'bg-orange-50', text: 'text-orange-700' },
-  appointment: { color: 'bg-purple-600', label: 'Appointment', lightBg: 'bg-purple-50', text: 'text-purple-700' },
-};
+type ViewFilter = 'today' | 'week' | 'month' | 'date';
 
-type ViewFilter = 'today' | 'week' | 'month';
+// ============================================================================
+// DATE HELPER FUNCTIONS (using local timezone)
+// ============================================================================
+
+// Check if a date is in the current week (local timezone)
+function isDateInCurrentWeek(date: Date): boolean {
+  const today = new Date();
+  
+  // Get start of week (Sunday)
+  const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  
+  // Get end of week (Saturday)
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+  
+  // Create date at start of day for comparison
+  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  return compareDate >= startOfWeek && compareDate <= endOfWeek;
+}
+
+// Check if a date is today (local timezone)
+function isDateToday(date: Date): boolean {
+  const today = new Date();
+  return isSameDay(date, today);
+}
+
+// Check if a date is in a specific month/year
+function isDateInMonth(date: Date, month: number, year: number): boolean {
+  return date.getMonth() === month && date.getFullYear() === year;
+}
+
+// Format date for section headers
+function formatDateHeader(date: Date): string {
+  const today = new Date();
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+  if (isSameDay(date, today)) {
+    return 'Today';
+  } else if (isSameDay(date, tomorrow)) {
+    return 'Tomorrow';
+  } else if (isSameDay(date, yesterday)) {
+    return 'Yesterday';
+  }
+  
+  return new Intl.DateTimeFormat('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric' 
+  }).format(date);
+}
+
+// ============================================================================
+// MAIN CALENDAR PAGE COMPONENT
+// ============================================================================
 
 export default function CalendarPage() {
-  // Start calendar at November 2025 where we have data
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 1)); // November 2025
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date(2025, 10, 3)); // Nov 3 has events
+  const router = useRouter();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewFilter, setViewFilter] = useState<ViewFilter>('month');
   const [isYearPickerOpen, setIsYearPickerOpen] = useState(false);
+  const [eventTypeFilter, setEventTypeFilter] = useState<CalendarEventType | 'all'>('all');
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
+  // Calculate date range for the current month view (including padding days)
+  const dateRange = useMemo(() => {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    // Start from the beginning of the week containing the first day
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - startDate.getDay());
+    
+    // End at the end of the week containing the last day
+    const endDate = new Date(lastDay);
+    endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
+    
+    return {
+      startDate: getLocalDateString(startDate),
+      endDate: getLocalDateString(endDate),
+    };
+  }, [year, month]);
+
+  // Fetch calendar events
+  const { data, isLoading, isError, refetch } = useCalendarEvents({
+    startDate: dateRange.startDate,
+    endDate: dateRange.endDate,
+    type: eventTypeFilter,
+  });
+
+  const events = data?.data?.events || [];
+  const summary = data?.data?.summary || { pickups: 0, deliveries: 0, workshopReturns: 0, total: 0 };
+
+  // Group events by date (using local timezone)
+  const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
+
+  // Calendar days calculation
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
@@ -154,73 +135,208 @@ export default function CalendarPage() {
     return days;
   }, [year, month]);
 
-  // Generate year options (2020-2030)
+  // Generate year options
   const yearOptions = useMemo(() => {
     const years = [];
-    for (let i = 2020; i <= 2030; i++) {
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear - 2; i <= currentYear + 3; i++) {
       years.push(i);
     }
     return years;
   }, []);
 
-  const getDateString = (day: number) => 
-    `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  // Get date string for a calendar day
+  const getDateString = (day: number) => {
+    const date = new Date(year, month, day);
+    return getLocalDateString(date);
+  };
 
-  const getEventsForDate = (day: number) => MOCK_EVENTS[getDateString(day)] || [];
+  // Get events for a specific calendar day
+  const getEventsForDate = (day: number): CalendarEvent[] => {
+    const dateKey = getDateString(day);
+    return eventsByDate[dateKey] || [];
+  };
 
+  // Check if a calendar day is today
   const isToday = (day: number) => {
     const today = new Date();
-    return day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-  };
-
-  const isSelected = (day: number) => {
-    if (!selectedDate) return false;
-    return day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
-  };
-
-  // Check if date is in current week
-  const isInCurrentWeek = (day: number) => {
-    const today = new Date();
     const dayDate = new Date(year, month, day);
-    
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-    
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
-    
-    return dayDate >= startOfWeek && dayDate <= endOfWeek;
+    return isSameDay(dayDate, today);
   };
 
-  const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate.getDate()) : [];
+  // Check if a calendar day is selected
+  const isSelected = (day: number) => {
+    if (!selectedDate || viewFilter !== 'date') return false;
+    const dayDate = new Date(year, month, day);
+    return isSameDay(dayDate, selectedDate);
+  };
+
+  // Check if a calendar day is in the current week
+  const isInCurrentWeek = (day: number) => {
+    const dayDate = new Date(year, month, day);
+    return isDateInCurrentWeek(dayDate);
+  };
+
+  // =========================================================================
+  // Filter events based on viewFilter (using local timezone)
+  // =========================================================================
+  const filteredEvents = useMemo(() => {
+    const today = new Date();
+    
+    if (viewFilter === 'today') {
+      // Show only today's events
+      return events.filter(event => {
+        const eventDate = new Date(event.date);
+        return isSameDay(eventDate, today);
+      });
+    } else if (viewFilter === 'week') {
+      // Show this week's events
+      return events.filter(event => {
+        const eventDate = new Date(event.date);
+        return isDateInCurrentWeek(eventDate);
+      });
+    } else if (viewFilter === 'month') {
+      // Show ALL events for the currently displayed month
+      return events.filter(event => {
+        const eventDate = new Date(event.date);
+        return isDateInMonth(eventDate, month, year);
+      });
+    } else if (viewFilter === 'date' && selectedDate) {
+      // Show events for a specific selected date
+      return events.filter(event => {
+        const eventDate = new Date(event.date);
+        return isSameDay(eventDate, selectedDate);
+      });
+    }
+    return [];
+  }, [events, viewFilter, selectedDate, month, year]);
+
+  // Group filtered events by date for display
+  const groupedFilteredEvents = useMemo(() => {
+    const grouped: { date: Date; dateStr: string; events: CalendarEvent[] }[] = [];
+    const dateMap = new Map<string, { date: Date; events: CalendarEvent[] }>();
+    
+    for (const event of filteredEvents) {
+      const eventDate = new Date(event.date);
+      const dateStr = getLocalDateString(eventDate);
+      
+      if (!dateMap.has(dateStr)) {
+        dateMap.set(dateStr, { 
+          date: new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate()), 
+          events: [] 
+        });
+      }
+      dateMap.get(dateStr)!.events.push(event);
+    }
+    
+    // Sort dates and create grouped array
+    const sortedDates = Array.from(dateMap.keys()).sort();
+    for (const dateStr of sortedDates) {
+      const data = dateMap.get(dateStr)!;
+      grouped.push({
+        date: data.date,
+        dateStr,
+        events: data.events.sort((a, b) => 
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        ),
+      });
+    }
+    
+    return grouped;
+  }, [filteredEvents]);
+
+  // Get sidebar title based on view filter
+  const getSidebarTitle = () => {
+    if (viewFilter === 'today') {
+      return "Today's Events";
+    } else if (viewFilter === 'week') {
+      return "This Week's Events";
+    } else if (viewFilter === 'month') {
+      return `${MONTHS[month]} ${year}`;
+    } else if (viewFilter === 'date' && selectedDate) {
+      return new Intl.DateTimeFormat('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }).format(selectedDate);
+    }
+    return 'Select a date';
+  };
+
+  // Get empty state message
+  const getEmptyMessage = () => {
+    if (viewFilter === 'today') {
+      return 'No events scheduled for today';
+    } else if (viewFilter === 'week') {
+      return 'No events scheduled this week';
+    } else if (viewFilter === 'month') {
+      return `No events scheduled for ${MONTHS[month]}`;
+    } else if (viewFilter === 'date') {
+      return 'No events for selected date';
+    }
+    return 'No events';
+  };
+
+  // Should show grouped view (multiple dates with headers)
+  const shouldShowGroupedView = viewFilter === 'week' || viewFilter === 'month';
 
   const handleToday = () => {
     const today = new Date();
     setCurrentDate(today);
-    setSelectedDate(today);
+    setSelectedDate(null);
     setViewFilter('today');
   };
 
   const handleThisWeek = () => {
     const today = new Date();
     setCurrentDate(today);
-    setSelectedDate(today);
+    setSelectedDate(null);
     setViewFilter('week');
   };
 
   const handleThisMonth = () => {
     const today = new Date();
     setCurrentDate(today);
-    setSelectedDate(today);
+    setSelectedDate(null);
     setViewFilter('month');
+  };
+
+  const handleDateClick = (day: number) => {
+    const clickedDate = new Date(year, month, day);
+    setSelectedDate(clickedDate);
+    setViewFilter('date');
   };
 
   const handleYearChange = (newYear: number) => {
     setCurrentDate(new Date(newYear, month, 1));
     setIsYearPickerOpen(false);
+    if (viewFilter === 'month') {
+      setSelectedDate(null);
+    }
   };
+
+  const handleMonthChange = (direction: 'prev' | 'next') => {
+    const newMonth = direction === 'prev' ? month - 1 : month + 1;
+    setCurrentDate(new Date(year, newMonth, 1));
+    if (viewFilter === 'month') {
+      setSelectedDate(null);
+    }
+  };
+
+  const handleEventClick = (event: CalendarEvent) => {
+    router.push(`/orders/${event.orderId}`);
+  };
+
+  // Check which filter button should be active
+  const getActiveFilter = (): 'today' | 'week' | 'month' | null => {
+    if (viewFilter === 'today') return 'today';
+    if (viewFilter === 'week') return 'week';
+    if (viewFilter === 'month') return 'month';
+    return null;
+  };
+
+  const activeFilter = getActiveFilter();
 
   return (
     <div className="flex flex-col h-full">
@@ -230,15 +346,17 @@ export default function CalendarPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 mb-1">Calendar</h1>
-              <p className="text-sm text-slate-500">Manage deliveries, pickups & appointments</p>
+              <p className="text-sm text-slate-500">
+                {isLoading ? 'Loading...' : `${summary.total} events · ${summary.pickups} pickups · ${summary.deliveries} deliveries · ${summary.workshopReturns} workshop returns`}
+              </p>
             </div>
             <div className="flex gap-2">
-              {/* Filter Buttons */}
+              {/* View Filter Buttons */}
               <button
                 onClick={handleToday}
                 className={cn(
                   'h-11 flex items-center justify-center px-5 gap-2 rounded-full border transition-all duration-200 font-medium text-sm',
-                  viewFilter === 'today'
+                  activeFilter === 'today'
                     ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                     : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 text-slate-600'
                 )}
@@ -251,7 +369,7 @@ export default function CalendarPage() {
                 onClick={handleThisWeek}
                 className={cn(
                   'h-11 flex items-center justify-center px-5 gap-2 rounded-full border transition-all duration-200 font-medium text-sm',
-                  viewFilter === 'week'
+                  activeFilter === 'week'
                     ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                     : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 text-slate-600'
                 )}
@@ -264,7 +382,7 @@ export default function CalendarPage() {
                 onClick={handleThisMonth}
                 className={cn(
                   'h-11 flex items-center justify-center px-5 gap-2 rounded-full border transition-all duration-200 font-medium text-sm',
-                  viewFilter === 'month'
+                  activeFilter === 'month'
                     ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
                     : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 text-slate-600'
                 )}
@@ -272,28 +390,41 @@ export default function CalendarPage() {
                 <span className="hidden sm:inline">This Month</span>
                 <span className="sm:hidden">Month</span>
               </button>
-
-              <button
-                className={cn(
-                  'h-11 flex items-center justify-center px-5 gap-2 rounded-full transition-all duration-200',
-                  'bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm'
-                )}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">New Event</span>
-                <span className="sm:hidden">Add</span>
-              </button>
             </div>
           </div>
 
-          {/* Legend */}
+          {/* Legend with Filters */}
           <div className="flex flex-wrap items-center gap-4">
-            {Object.entries(EVENT_TYPES).map(([type, config]) => (
-              <div key={type} className="flex items-center gap-2">
-                <div className={cn("w-2.5 h-2.5 rounded-full", config.color)} />
-                <span className="text-sm text-slate-600">{config.label}</span>
-              </div>
-            ))}
+            {Object.entries(EVENT_TYPE_CONFIG).map(([type, config]) => {
+              const count = type === 'pickup' ? summary.pickups : 
+                           type === 'delivery' ? summary.deliveries : 
+                           summary.workshopReturns;
+              const isActive = eventTypeFilter === 'all' || eventTypeFilter === type;
+              
+              return (
+                <button
+                  key={type}
+                  onClick={() => setEventTypeFilter(
+                    eventTypeFilter === type ? 'all' : type as CalendarEventType
+                  )}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-full transition-all",
+                    isActive 
+                      ? "bg-white border border-slate-200 shadow-sm" 
+                      : "opacity-50 hover:opacity-75"
+                  )}
+                >
+                  <div className={cn("w-2.5 h-2.5 rounded-full", config.color)} />
+                  <span className="text-sm text-slate-600">{config.label}</span>
+                  <span className={cn(
+                    "text-xs font-medium px-1.5 py-0.5 rounded-full",
+                    config.lightBg, config.textColor
+                  )}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -304,7 +435,7 @@ export default function CalendarPage() {
           {/* Calendar Grid */}
           <div className="lg:col-span-2">
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-              {/* Calendar Header with Year Picker */}
+              {/* Calendar Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
                 <div className="flex items-center gap-3">
                   <h2 className="text-lg font-semibold text-slate-900">
@@ -327,7 +458,6 @@ export default function CalendarPage() {
                     <AnimatePresence>
                       {isYearPickerOpen && (
                         <>
-                          {/* Backdrop */}
                           <div 
                             className="fixed inset-0 z-40" 
                             onClick={() => setIsYearPickerOpen(false)}
@@ -364,17 +494,21 @@ export default function CalendarPage() {
                       )}
                     </AnimatePresence>
                   </div>
+
+                  {isLoading && (
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  )}
                 </div>
 
                 <div className="flex gap-1">
                   <button
-                    onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
+                    onClick={() => handleMonthChange('prev')}
                     className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
+                    onClick={() => handleMonthChange('next')}
                     className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -399,24 +533,27 @@ export default function CalendarPage() {
                     return <div key={`empty-${index}`} className="aspect-square border-b border-r border-slate-100 bg-slate-50/30" />;
                   }
 
-                  const events = getEventsForDate(day);
+                  const dayEvents = getEventsForDate(day);
                   const today = isToday(day);
                   const selected = isSelected(day);
                   const inWeek = isInCurrentWeek(day);
-                  const highlighted = (viewFilter === 'week' && inWeek) || (viewFilter === 'today' && today);
+                  
+                  // Highlight based on current view
+                  const highlighted = 
+                    (activeFilter === 'week' && inWeek) || 
+                    (activeFilter === 'today' && today);
 
                   return (
                     <button
                       key={day}
-                      onClick={() => setSelectedDate(new Date(year, month, day))}
+                      onClick={() => handleDateClick(day)}
                       className={cn(
                         "aspect-square border-b border-r border-slate-100 p-2 transition-all relative group hover:bg-slate-50",
                         selected && "bg-blue-50 ring-1 ring-inset ring-blue-200",
-                        highlighted && !selected && "bg-blue-50/50"
+                        !selected && highlighted && "bg-blue-50/50"
                       )}
                     >
                       <div className="flex flex-col h-full">
-                        {/* Day Number */}
                         <span
                           className={cn(
                             "text-sm font-medium mb-1 transition-all",
@@ -429,11 +566,10 @@ export default function CalendarPage() {
                           {day}
                         </span>
 
-                        {/* Event Indicators */}
-                        {events.length > 0 && (
+                        {dayEvents.length > 0 && (
                           <div className="flex flex-col gap-1 mt-auto">
-                            {events.slice(0, 3).map((event) => {
-                              const config = EVENT_TYPES[event.type];
+                            {dayEvents.slice(0, 3).map((event) => {
+                              const config = EVENT_TYPE_CONFIG[event.type];
                               return (
                                 <div
                                   key={event.id}
@@ -446,9 +582,9 @@ export default function CalendarPage() {
                                 />
                               );
                             })}
-                            {events.length > 3 && (
+                            {dayEvents.length > 3 && (
                               <span className="text-[10px] font-medium text-slate-500 text-center">
-                                +{events.length - 3}
+                                +{dayEvents.length - 3}
                               </span>
                             )}
                           </div>
@@ -466,116 +602,218 @@ export default function CalendarPage() {
             {/* Sidebar Header */}
             <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-blue-100/30">
               <h3 className="font-semibold text-slate-900 mb-1">
-                {selectedDate
-                  ? new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(selectedDate)
-                  : 'Select a date'}
+                {getSidebarTitle()}
               </h3>
               <p className="text-xs text-slate-600">
-                {selectedDateEvents.length} {selectedDateEvents.length === 1 ? 'event' : 'events'} scheduled
+                {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'} scheduled
               </p>
             </div>
 
             {/* Events List */}
             <div className="flex-1 overflow-y-auto p-4">
-              <AnimatePresence mode="wait">
-                {selectedDateEvents.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex flex-col items-center justify-center py-12"
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
+                  <p className="text-sm text-slate-500">Loading events...</p>
+                </div>
+              ) : isError ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-3">
+                    <AlertCircle className="w-7 h-7 text-red-500" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-900 mb-1">Failed to load events</p>
+                  <button
+                    onClick={() => refetch()}
+                    className="text-sm text-blue-600 hover:text-blue-700"
                   >
-                    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
-                      <CalendarIcon className="w-7 h-7 text-slate-400" />
-                    </div>
-                    <p className="text-sm font-medium text-slate-900 mb-1">No events</p>
-                    <p className="text-xs text-slate-500 mb-4 text-center">Schedule deliveries or appointments for this day</p>
-                    <button className="h-9 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm">
-                      <Plus className="w-4 h-4 inline mr-1.5" />
-                      Add Event
-                    </button>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-3"
-                  >
-                    {selectedDateEvents.map((event, index) => {
-                      const config = EVENT_TYPES[event.type];
-                      
-                      return (
-                        <motion.div
-                          key={event.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="group relative"
-                        >
-                          <div className={cn(
-                            "p-4 rounded-xl border transition-all",
-                            "border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white"
-                          )}>
-                            {/* Event Type Bar */}
-                            <div className={cn("absolute left-0 top-0 bottom-0 w-1 rounded-l-xl", config.color)} />
-
-                            {/* Event Header */}
-                            <div className="flex items-start justify-between gap-3 mb-3 ml-3">
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-slate-900 text-sm mb-1 truncate">
-                                  {event.title}
-                                </h4>
-                                <div className="flex items-center gap-1.5">
-                                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                                  <span className="text-xs text-slate-600">{event.time}</span>
-                                </div>
-                              </div>
-                              <button className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                <MoreHorizontal className="w-4 h-4 text-slate-400" />
-                              </button>
-                            </div>
-
-                            {/* Event Details */}
-                            {(event.customer || event.orderId) && (
-                              <div className="space-y-2 ml-3">
-                                {event.customer && (
-                                  <div className="flex items-center gap-2">
-                                    <User className="w-3.5 h-3.5 text-slate-400" />
-                                    <span className="text-xs text-slate-600">{event.customer}</span>
-                                  </div>
-                                )}
-                                {event.orderId && (
-                                  <div className="flex items-center gap-2">
-                                    <Package className="w-3.5 h-3.5 text-slate-400" />
-                                    <span className="text-xs text-slate-600 font-mono">{event.orderId}</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Event Type Badge */}
-                            <div className="mt-3 ml-3">
-                              <span className={cn(
-                                "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border",
-                                config.lightBg,
-                                config.text,
-                                "border-" + config.color.replace('bg-', '')
+                    Try again
+                  </button>
+                </div>
+              ) : (
+                <AnimatePresence mode="wait">
+                  {filteredEvents.length === 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="flex flex-col items-center justify-center py-12"
+                    >
+                      <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-3">
+                        <CalendarIcon className="w-7 h-7 text-slate-400" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-900 mb-1">No events</p>
+                      <p className="text-xs text-slate-500 mb-4 text-center">
+                        {getEmptyMessage()}
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key={viewFilter + (selectedDate?.getTime() || '') + month + year}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="space-y-4"
+                    >
+                      {shouldShowGroupedView ? (
+                        groupedFilteredEvents.map(({ date, dateStr, events: dayEvents }) => (
+                          <div key={dateStr}>
+                            {/* Date Header */}
+                            <div className="flex items-center gap-2 mb-2 sticky top-0 bg-white py-1 z-10">
+                              <div className={cn(
+                                "text-xs font-semibold px-2 py-1 rounded-full",
+                                isDateToday(date) 
+                                  ? "bg-blue-600 text-white" 
+                                  : "bg-slate-100 text-slate-700"
                               )}>
-                                {config.label}
+                                {formatDateHeader(date)}
+                              </div>
+                              <div className="flex-1 h-px bg-slate-200" />
+                              <span className="text-xs text-slate-500">
+                                {dayEvents.length} {dayEvents.length === 1 ? 'event' : 'events'}
                               </span>
                             </div>
+                            
+                            {/* Events for this date */}
+                            <div className="space-y-2">
+                              {dayEvents.map((event, index) => (
+                                <EventCard 
+                                  key={event.id} 
+                                  event={event} 
+                                  index={index}
+                                  onClick={() => handleEventClick(event)}
+                                />
+                              ))}
+                            </div>
                           </div>
-                        </motion.div>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                        ))
+                      ) : (
+                        <div className="space-y-3">
+                          {filteredEvents.map((event, index) => (
+                            <EventCard 
+                              key={event.id} 
+                              event={event} 
+                              index={index}
+                              onClick={() => handleEventClick(event)}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// ============================================================================
+// EVENT CARD COMPONENT
+// ============================================================================
+
+interface EventCardProps {
+  event: CalendarEvent;
+  index: number;
+  onClick: () => void;
+}
+
+function EventCard({ event, index, onClick }: EventCardProps) {
+  const config = EVENT_TYPE_CONFIG[event.type];
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.03 }}
+      className="group relative cursor-pointer"
+      onClick={onClick}
+    >
+      <div className={cn(
+        "p-4 rounded-xl border transition-all",
+        "border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white"
+      )}>
+        {/* Event Type Bar */}
+        <div className={cn("absolute left-0 top-0 bottom-0 w-1 rounded-l-xl", config.color)} />
+
+        {/* Event Header */}
+        <div className="flex items-start justify-between gap-3 mb-2 ml-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="font-semibold text-slate-900 text-sm truncate">
+                {event.customer || event.orderNumber}
+              </h4>
+              {event.isExpress && (
+                <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded">
+                  EXPRESS
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs text-slate-600">{event.time}</span>
+            </div>
+          </div>
+          <button 
+            className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <MoreHorizontal className="w-4 h-4 text-slate-400" />
+          </button>
+        </div>
+
+        {/* Event Details */}
+        <div className="space-y-1.5 ml-3">
+          {event.customerPhone && (
+            <div className="flex items-center gap-2">
+              <Phone className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs text-slate-600">{event.customerPhone}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Package className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs text-slate-600 font-mono">{event.orderNumber}</span>
+          </div>
+          {event.workshopPartnerName && (
+            <div className="flex items-center gap-2">
+              <Factory className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs text-slate-600">
+                {event.workshopPartnerName} ({event.workshopItemsCount} items)
+              </span>
+            </div>
+          )}
+          {event.itemCount && !event.workshopItemsCount && (
+            <div className="flex items-center gap-2">
+              <Package className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs text-slate-600">{event.itemCount} items</span>
+            </div>
+          )}
+        </div>
+
+        {/* Event Type Badge & Amount */}
+        <div className="mt-3 ml-3 flex items-center justify-between">
+          <span className={cn(
+            "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border",
+            config.lightBg,
+            config.textColor,
+            config.borderColor
+          )}>
+            {event.type === 'pickup' && <Truck className="w-3 h-3 mr-1" />}
+            {event.type === 'delivery' && <Truck className="w-3 h-3 mr-1" />}
+            {event.type === 'workshop_return' && <Factory className="w-3 h-3 mr-1" />}
+            {config.label}
+          </span>
+          {event.totalAmount && (
+            <span className="text-sm font-semibold text-slate-900">
+              ₹{event.totalAmount.toLocaleString('en-IN')}
+            </span>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
 }

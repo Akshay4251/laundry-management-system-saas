@@ -1,17 +1,20 @@
+// components/auth/login-form.tsx
+
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 
 const LoginForm = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -20,13 +23,37 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const result = await signIn("credentials", {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Invalid email or password");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if super admin for redirect
+      const superAdminEmails = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS?.split(",").map(e => e.trim().toLowerCase()) || [];
+      const isSuperAdmin = superAdminEmails.includes(formData.email.trim().toLowerCase());
+
+      if (isSuperAdmin) {
+        router.push("/super-admin");
+      } else {
+        router.push("/dashboard");
+      }
+
+      router.refresh();
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An error occurred. Please try again.");
       setIsLoading(false);
-      // TODO: Replace with actual authentication
-      router.push("/dashboard");
-    }, 1500);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,6 +65,13 @@ const LoginForm = () => {
 
   return (
     <div className="space-y-6">
+      {/* Error Alert */}
+      {error && (
+        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-800 font-medium">{error}</p>
+        </div>
+      )}
 
       {/* Email/Password Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -93,11 +127,7 @@ const LoginForm = () => {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
             >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -113,7 +143,7 @@ const LoginForm = () => {
             htmlFor="remember-me"
             className="ml-2 block text-sm text-gray-700 cursor-pointer"
           >
-            Remember me 
+            Remember me
           </label>
         </div>
 

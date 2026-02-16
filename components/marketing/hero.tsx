@@ -66,7 +66,7 @@ const Hero = () => {
             >
               <Badge className="px-4 py-2 bg-gradient-to-r from-blue-600/10 to-cyan-600/10 text-blue-700 border-blue-200 hover:bg-blue-100 backdrop-blur-sm">
                 <Star className="w-3 h-3 mr-1 fill-blue-600 text-blue-600" />
-                Trusted by 500+ Laundry Businesses
+                Trusted by Laundry Businesses
               </Badge>
             </motion.div>
 

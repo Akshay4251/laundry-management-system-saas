@@ -5,9 +5,9 @@ import { Sparkles, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, 
 
 const Footer = () => {
   const contactInfo = [
-    { icon: Mail, text: "hello@laundrypro.com", href: "mailto:hello@laundrypro.com" },
-    { icon: Phone, text: "1-800-555-1234", href: "tel:+18005551234" },
-    { icon: MapPin, text: "San Francisco, CA", href: "#" },
+    { icon: Mail, text: "info@kalibytesolution.com", href: "mailto:info@kalibytesolution.com" },
+    { icon: Phone, text: "9657923492", href: "tel:+919657923492" },
+    { icon: MapPin, text: "Vishrambag, Sangli", href: "https://maps.app.goo.gl/MhCbsRzvLPzLwRcB9" },
   ];
 
   const services = [
@@ -88,7 +88,7 @@ const Footer = () => {
                       <Sparkles className="h-8 w-8 text-white" />
                     </div>
                   </div>
-                  <span className="text-3xl font-bold text-white">LaundryPro</span>
+                  <span className="text-3xl font-bold text-white">WashNDry</span>
                 </Link>
                 
                 <p className="text-gray-400 mt-6 leading-relaxed text-sm">
@@ -169,7 +169,7 @@ const Footer = () => {
               
               {/* Copyright */}
               <p className="text-sm text-gray-400">
-                © 2024 <Link href="/" className="text-white hover:text-blue-400 transition-colors font-semibold">LaundryPro</Link>. All rights reserved.
+                © 2026 <Link href="/" className="text-white hover:text-blue-400 transition-colors font-semibold">WashNDry</Link>. All rights reserved.
               </p>
 
               {/* Social Media Links */}

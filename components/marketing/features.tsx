@@ -81,7 +81,7 @@ const Features = () => {
           <div className="relative mx-auto max-w-6xl mb-32">
             <div className="absolute -z-50 size-[500px] -top-20 -left-20 aspect-square rounded-full bg-blue-500/20 blur-3xl"></div>
             <p className="text-slate-800 text-base sm:text-lg text-left max-w-3xl mb-6 sm:mb-8" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              LaundryPro helps you manage thousands of orders effortlessly with intelligent tracking and real-time updates that keep your customers informed.
+              WashNDry helps you manage thousands of orders effortlessly with intelligent tracking and real-time updates that keep your customers informed.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 md:gap-10">
               <div className="md:col-span-2">

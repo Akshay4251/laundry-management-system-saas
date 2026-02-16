@@ -129,7 +129,7 @@ const CTA = () => {
                   className="text-sm sm:text-base md:text-lg lg:text-xl text-blue-100 max-w-3xl mx-auto mb-6 sm:mb-7 md:mb-8 leading-relaxed font-medium px-2"
                 >
                   Streamline orders, manage staff, and delight customers with our all-in-one platform. 
-                  Join hundreds of successful laundry businesses growing with LaundryPro.
+                  Join hundreds of successful laundry businesses growing with WashNDry.
                 </motion.p>
 
                 {/* Feature Pills */}
