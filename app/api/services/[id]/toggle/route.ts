@@ -4,21 +4,20 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { apiResponse } from '@/lib/api-response';
 
-interface RouteParams {
-  params: { id: string };
-}
-
 // ============================================================================
 // PATCH /api/services/[id]/toggle - Toggle Service Active Status
 // ============================================================================
-export async function PATCH(req: NextRequest, { params }: RouteParams) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth();
     if (!session?.user?.businessId) {
       return apiResponse.unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
     const businessId = session.user.businessId;
 
     // Check if service exists
