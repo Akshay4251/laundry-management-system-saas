@@ -177,7 +177,7 @@ const RegisterForm = () => {
 
         <div className="space-y-2">
           <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
-            Phone Number (Optional)
+            Phone Number
           </Label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -186,6 +186,7 @@ const RegisterForm = () => {
               name="phone"
               type="tel"
               placeholder="+91 98765 43210"
+              required
               value={formData.phone}
               onChange={handleChange}
               disabled={isLoading}
