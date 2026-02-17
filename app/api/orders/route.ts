@@ -16,6 +16,11 @@ import {
   handlePrismaError
 } from '@/lib/api-response';
 import { createNotificationForBusiness } from '@/lib/notifications/create-notification';
+import {
+  generateOrderNumber,
+  generateTagNumber,
+  createOrderWithRetry,
+} from '@/lib/order-utils';
 
 // ============================================================================
 // HELPER: Generate Items Summary
@@ -113,14 +118,12 @@ export async function GET(req: NextRequest) {
       }),
     };
 
-    // Execute queries in parallel
     const [orders, totalCount] = await Promise.all([
       prisma.order.findMany({
         where,
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-
         include: {
           customer: {
             select: {
@@ -137,8 +140,6 @@ export async function GET(req: NextRequest) {
               name: true,
             },
           },
-
-          // ✅ ADDED: driver include for assignment UI
           driver: {
             select: {
               id: true,
@@ -147,7 +148,6 @@ export async function GET(req: NextRequest) {
               email: true,
             },
           },
-
           items: {
             select: {
               id: true,
@@ -167,18 +167,14 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-
       prisma.order.count({ where }),
     ]);
 
-    // Transform data
     const transformedOrders = orders.map((order) => {
-      // Count workshop items (currently at workshop)
       const workshopItems = order.items.filter(
         (item) => item.sentToWorkshop && item.status === 'AT_WORKSHOP' && !item.workshopReturnedDate
       ).length;
 
-      // Generate items summary object
       const itemsSummary = generateItemsSummary(order.items);
 
       return {
@@ -192,8 +188,6 @@ export async function GET(req: NextRequest) {
         isExpress: order.priority === 'EXPRESS',
         customer: order.customer,
         store: order.store,
-
-        // ✅ ADDED: driver assignment fields
         driverId: order.driverId,
         driver: order.driver
           ? {
@@ -203,7 +197,6 @@ export async function GET(req: NextRequest) {
               email: order.driver.email,
             }
           : null,
-
         subtotal: order.subtotal ? parseFloat(order.subtotal.toString()) : null,
         gstEnabled: order.gstEnabled,
         gstPercentage: order.gstPercentage ? parseFloat(order.gstPercentage.toString()) : null,
@@ -220,13 +213,9 @@ export async function GET(req: NextRequest) {
         assignedTo: order.assignedTo,
         totalItems: order._count.items,
         totalQuantity: order.items.reduce((sum, item) => sum + item.quantity, 0),
-
-        // Rework fields
         isRework: order.isRework,
         reworkCount: order.reworkCount,
         reworkReason: order.reworkReason,
-
-        // Computed fields
         workshopItems,
         itemsSummary,
         createdAt: order.createdAt,
@@ -274,13 +263,11 @@ interface CreateOrderInput {
   discountType?: 'percentage' | 'fixed';
   discountValue?: number;
   discountAmount?: number;
-  // GST fields from client
   subtotal?: number;
   gstEnabled?: boolean;
   gstPercentage?: number;
   gstAmount?: number;
   total?: number;
-  // For PICKUP orders without items
   estimatedItems?: string;
 }
 
@@ -338,7 +325,6 @@ export async function POST(req: NextRequest) {
       return apiResponse.badRequest('Pickup date is required for pickup orders');
     }
 
-    // Verify store belongs to business
     const store = await prisma.store.findFirst({
       where: { id: storeId, businessId, isActive: true },
     });
@@ -347,7 +333,6 @@ export async function POST(req: NextRequest) {
       return apiResponse.notFound('Store not found or inactive');
     }
 
-    // Verify customer belongs to business
     const customer = await prisma.customer.findFirst({
       where: { id: customerId, businessId, deletedAt: null },
     });
@@ -420,16 +405,13 @@ export async function POST(req: NextRequest) {
 
     const subtotal = providedSubtotal ?? calculatedSubtotal;
 
-    // Calculate GST
     let gstAmount = 0;
     if (gstEnabled && subtotal > 0) {
       gstAmount = providedGstAmount ?? Math.round((subtotal * gstPercentage) / 100 * 100) / 100;
     }
 
-    // Calculate total
     const totalAmount = providedTotal ?? (subtotal - discountAmount + gstAmount);
 
-    // Determine payment status
     let paymentStatus: PaymentStatus = 'UNPAID';
     if (paidAmount >= totalAmount && totalAmount > 0) {
       paymentStatus = 'PAID';
@@ -437,122 +419,127 @@ export async function POST(req: NextRequest) {
       paymentStatus = 'PARTIAL';
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // DETERMINE INITIAL STATUS
-    // ═══════════════════════════════════════════════════════════════════════
-
     const initialStatus: OrderStatus = orderType === 'PICKUP' ? 'PICKUP' : 'IN_PROGRESS';
 
-    // Generate unique order number
-    const orderNumber = await generateOrderNumber(businessId, storeId);
-
     // ═══════════════════════════════════════════════════════════════════════
-    // CREATE ORDER IN TRANSACTION
+    // CREATE ORDER WITH RETRY (handles race conditions from ALL sources)
     // ═══════════════════════════════════════════════════════════════════════
 
-    const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
-        data: {
-          businessId,
-          storeId,
-          customerId,
-          orderNumber,
-          orderType: orderType as OrderType,
-          status: initialStatus,
-          priority: isExpress ? 'EXPRESS' : 'NORMAL',
+    const result = await createOrderWithRetry(async () => {
+      const orderNumber = await generateOrderNumber(businessId, storeId);
 
-          subtotal: subtotal || 0,
-          gstEnabled,
-          gstPercentage: gstEnabled ? gstPercentage : null,
-          gstAmount: gstEnabled ? gstAmount : null,
-          totalAmount: totalAmount || 0,
-          paidAmount,
-          discount: discountAmount,
-          tax: 0,
-
-          paymentStatus,
-          paymentMode: paymentMethod || null,
-
-          pickupDate: pickupDate ? new Date(pickupDate) : null,
-          deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
-          specialInstructions: notes || estimatedItems || null,
-
-          isRework: false,
-          reworkCount: 0,
-        },
-      });
-
-      if (items.length > 0) {
-        await Promise.all(
-          items.map(async (item, index) => {
-            const dbItem = itemMap.get(item.itemId)!;
-            const dbTreatment = treatmentMap.get(item.treatmentId)!;
-
-            const tagNumber = generateTagNumber(orderNumber, index + 1);
-            const price = isExpress && item.expressPrice ? item.expressPrice : item.unitPrice;
-
-            return tx.orderItem.create({
-              data: {
-                orderId: newOrder.id,
-                storeId,
-                itemId: item.itemId,
-                treatmentId: item.treatmentId,
-                tagNumber,
-                itemName: dbItem.name,
-                treatmentName: dbTreatment.name,
-                quantity: item.quantity,
-                status: orderType === 'PICKUP' ? 'RECEIVED' : 'IN_PROGRESS',
-                unitPrice: item.unitPrice,
-                subtotal: price * item.quantity,
-                isExpress,
-                notes: item.notes || null,
-              },
-            });
-          })
-        );
-      }
-
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId: newOrder.id,
-          toStatus: initialStatus,
-          changedBy: session.user?.id || 'system',
-          notes:
-            orderType === 'PICKUP'
-              ? `Pickup scheduled for ${new Date(pickupDate!).toLocaleDateString()}`
-              : isExpress
-                ? 'Express walk-in order created - priority processing'
-                : 'Walk-in order created - processing started',
-        },
-      });
-
-      if (paidAmount > 0 && paymentMethod) {
-        await tx.payment.create({
+      const newOrder = await prisma.$transaction(async (tx) => {
+        const created = await tx.order.create({
           data: {
-            orderId: newOrder.id,
-            amount: paidAmount,
-            mode: paymentMethod,
-            notes: 'Initial payment at order creation',
+            businessId,
+            storeId,
+            customerId,
+            orderNumber,
+            orderType: orderType as OrderType,
+            status: initialStatus,
+            priority: isExpress ? 'EXPRESS' : 'NORMAL',
+
+            subtotal: subtotal || 0,
+            gstEnabled,
+            gstPercentage: gstEnabled ? gstPercentage : null,
+            gstAmount: gstEnabled ? gstAmount : null,
+            totalAmount: totalAmount || 0,
+            paidAmount,
+            discount: discountAmount,
+            tax: 0,
+
+            paymentStatus,
+            paymentMode: paymentMethod || null,
+
+            pickupDate: pickupDate ? new Date(pickupDate) : null,
+            deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+            specialInstructions: notes || estimatedItems || null,
+
+            isRework: false,
+            reworkCount: 0,
           },
         });
-      }
 
-      if (items.length > 0) {
-        await tx.customer.update({
-          where: { id: customerId },
+        if (items.length > 0) {
+          await Promise.all(
+            items.map(async (item, index) => {
+              const dbItem = itemMap.get(item.itemId)!;
+              const dbTreatment = treatmentMap.get(item.treatmentId)!;
+
+              const tagNumber = generateTagNumber(orderNumber, index + 1);
+              const price = isExpress && item.expressPrice ? item.expressPrice : item.unitPrice;
+
+              return tx.orderItem.create({
+                data: {
+                  orderId: created.id,
+                  storeId,
+                  itemId: item.itemId,
+                  treatmentId: item.treatmentId,
+                  tagNumber,
+                  itemName: dbItem.name,
+                  treatmentName: dbTreatment.name,
+                  quantity: item.quantity,
+                  status: orderType === 'PICKUP' ? 'RECEIVED' : 'IN_PROGRESS',
+                  unitPrice: item.unitPrice,
+                  subtotal: price * item.quantity,
+                  isExpress,
+                  notes: item.notes || null,
+                },
+              });
+            })
+          );
+        }
+
+        await tx.orderStatusHistory.create({
           data: {
-            lastOrderDate: new Date(),
-            totalOrders: { increment: 1 },
-            totalSpent: { increment: totalAmount || 0 },
+            orderId: created.id,
+            toStatus: initialStatus,
+            changedBy: session.user?.id || 'system',
+            notes:
+              orderType === 'PICKUP'
+                ? `Pickup scheduled for ${new Date(pickupDate!).toLocaleDateString()}`
+                : isExpress
+                  ? 'Express walk-in order created - priority processing'
+                  : 'Walk-in order created - processing started',
           },
         });
-      }
 
-      return newOrder;
+        if (paidAmount > 0 && paymentMethod) {
+          await tx.payment.create({
+            data: {
+              orderId: created.id,
+              amount: paidAmount,
+              mode: paymentMethod,
+              notes: 'Initial payment at order creation',
+            },
+          });
+        }
+
+        if (items.length > 0) {
+          await tx.customer.update({
+            where: { id: customerId },
+            data: {
+              lastOrderDate: new Date(),
+              totalOrders: { increment: 1 },
+              totalSpent: { increment: totalAmount || 0 },
+            },
+          });
+        }
+
+        return created;
+      });
+
+      return { order: newOrder, orderNumber };
     });
 
+    if (!result.success) {
+      return apiResponse.error(result.error);
+    }
+
+    const { order, orderNumber } = result.data;
+
     // ═══════════════════════════════════════════════════════════════════════
-    // 🔔 CREATE NOTIFICATION (Outside transaction)
+    // 🔔 CREATE NOTIFICATION
     // ═══════════════════════════════════════════════════════════════════════
 
     try {
@@ -689,48 +676,4 @@ export async function POST(req: NextRequest) {
     }
     return apiResponse.error('Failed to create order');
   }
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-async function generateOrderNumber(businessId: string, storeId: string): Promise<string> {
-  const today = new Date();
-  const year = today.getFullYear().toString().slice(-2);
-  const month = (today.getMonth() + 1).toString().padStart(2, '0');
-  const day = today.getDate().toString().padStart(2, '0');
-
-  const store = await prisma.store.findUnique({
-    where: { id: storeId },
-    select: { name: true },
-  });
-
-  const storeCode =
-    store?.name.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'STR';
-
-  const startOfDay = new Date(today);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(today);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const todayOrderCount = await prisma.order.count({
-    where: {
-      businessId,
-      storeId,
-      createdAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-    },
-  });
-
-  const sequenceNumber = (todayOrderCount + 1).toString().padStart(4, '0');
-
-  return `${storeCode}-${year}${month}${day}-${sequenceNumber}`;
-}
-
-function generateTagNumber(orderNumber: string, itemIndex: number): string {
-  const itemNumber = itemIndex.toString().padStart(3, '0');
-  return `${orderNumber}-${itemNumber}`;
 }

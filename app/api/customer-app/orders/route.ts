@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { customerApiResponse } from '@/lib/customer-api-response';
 import { authenticateCustomer } from '@/lib/customer-auth';
 import { OrderStatus, Prisma } from '@prisma/client';
+import { generateOrderNumber, createOrderWithRetry } from '@/lib/order-utils';
 
 // ============================================================================
 // GET /api/customer-app/orders - List customer orders
@@ -23,13 +24,11 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: Prisma.OrderWhereInput = {
       customerId: customer.id,
       businessId: customer.businessId,
     };
 
-    // Filter by status
     if (statusParam === 'active') {
       where.status = {
         notIn: ['COMPLETED', 'CANCELLED'],
@@ -54,7 +53,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Fetch orders
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
@@ -102,7 +100,6 @@ export async function GET(req: NextRequest) {
       prisma.order.count({ where }),
     ]);
 
-    // Transform orders
     const transformedOrders = orders.map((order) => ({
       id: order.id,
       orderNumber: order.orderNumber,
@@ -210,7 +207,7 @@ export async function POST(req: NextRequest) {
       return customerApiResponse.badRequest('No active store found');
     }
 
-    // Get address if provided and validate it belongs to this customer
+    // Get address if provided
     let pickupAddress: string | null = null;
     let validAddressId: string | null = null;
 
@@ -229,7 +226,6 @@ export async function POST(req: NextRequest) {
           `${address.city} - ${address.pincode}`,
         ].filter(Boolean).join(', ');
 
-        // Also update the customer's main address field if it's empty
         const existingCustomer = await prisma.customer.findUnique({
           where: { id: customer.id },
           select: { address: true },
@@ -243,50 +239,60 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Generate order number
-    const orderNumber = await generateOrderNumber(customer.businessId, store.id);
+    // ═══════════════════════════════════════════════════════════════════════
+    // CREATE ORDER WITH RETRY (shared logic handles collisions with dashboard)
+    // ═══════════════════════════════════════════════════════════════════════
 
-    // Create pickup order
-    const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
-        data: {
-          businessId: customer.businessId,
-          storeId: store.id,
-          customerId: customer.id,
-          orderNumber,
-          orderType: 'PICKUP',
-          status: 'PICKUP',
-          priority: 'NORMAL',
-          subtotal: 0,
-          totalAmount: 0,
-          paidAmount: 0,
-          paymentStatus: 'UNPAID',
-          pickupDate: new Date(pickupDate),
-          deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
-          // Link the customer address to the order
-          addressId: validAddressId,
-          specialInstructions: [
-            pickupAddress ? `Pickup Address: ${pickupAddress}` : null,
-            `Pickup Time: ${pickupTimeSlot}`,
-            deliveryTimeSlot ? `Delivery Time: ${deliveryTimeSlot}` : null,
-            estimatedItems ? `Estimated Items: ${estimatedItems}` : null,
-            specialInstructions || null,
-          ].filter(Boolean).join('\n'),
-        },
+    const result = await createOrderWithRetry(async () => {
+      const orderNumber = await generateOrderNumber(customer.businessId, store.id);
+
+      const newOrder = await prisma.$transaction(async (tx) => {
+        const created = await tx.order.create({
+          data: {
+            businessId: customer.businessId,
+            storeId: store.id,
+            customerId: customer.id,
+            orderNumber,
+            orderType: 'PICKUP',
+            status: 'PICKUP',
+            priority: 'NORMAL',
+            subtotal: 0,
+            totalAmount: 0,
+            paidAmount: 0,
+            paymentStatus: 'UNPAID',
+            pickupDate: new Date(pickupDate),
+            deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+            addressId: validAddressId,
+            specialInstructions: [
+              pickupAddress ? `Pickup Address: ${pickupAddress}` : null,
+              `Pickup Time: ${pickupTimeSlot}`,
+              deliveryTimeSlot ? `Delivery Time: ${deliveryTimeSlot}` : null,
+              estimatedItems ? `Estimated Items: ${estimatedItems}` : null,
+              specialInstructions || null,
+            ].filter(Boolean).join('\n'),
+          },
+        });
+
+        await tx.orderStatusHistory.create({
+          data: {
+            orderId: created.id,
+            toStatus: 'PICKUP',
+            changedBy: 'customer-app',
+            notes: `Pickup scheduled via customer app for ${new Date(pickupDate).toLocaleDateString()}`,
+          },
+        });
+
+        return created;
       });
 
-      // Create status history
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId: newOrder.id,
-          toStatus: 'PICKUP',
-          changedBy: 'customer-app',
-          notes: `Pickup scheduled via customer app for ${new Date(pickupDate).toLocaleDateString()}`,
-        },
-      });
-
-      return newOrder;
+      return { order: newOrder, orderNumber };
     });
+
+    if (!result.success) {
+      return customerApiResponse.error(result.error);
+    }
+
+    const { order } = result.data;
 
     // Fetch complete order for response
     const completeOrder = await prisma.order.findUnique({
@@ -333,41 +339,4 @@ export async function POST(req: NextRequest) {
     console.error('Create order error:', error);
     return customerApiResponse.error('Failed to schedule pickup');
   }
-}
-
-// Helper function to generate order number
-async function generateOrderNumber(businessId: string, storeId: string): Promise<string> {
-  const today = new Date();
-  const year = today.getFullYear().toString().slice(-2);
-  const month = (today.getMonth() + 1).toString().padStart(2, '0');
-  const day = today.getDate().toString().padStart(2, '0');
-
-  const store = await prisma.store.findUnique({
-    where: { id: storeId },
-    select: { name: true },
-  });
-
-  const storeCode = store?.name
-    .replace(/[^a-zA-Z]/g, '')
-    .slice(0, 3)
-    .toUpperCase() || 'STR';
-
-  const startOfDay = new Date(today);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(today);
-  endOfDay.setHours(23, 59, 59, 999);
-
-  const todayOrderCount = await prisma.order.count({
-    where: {
-      businessId,
-      storeId,
-      createdAt: {
-        gte: startOfDay,
-        lte: endOfDay,
-      },
-    },
-  });
-
-  const sequenceNumber = (todayOrderCount + 1).toString().padStart(4, '0');
-  return `${storeCode}-${year}${month}${day}-${sequenceNumber}`;
 }
