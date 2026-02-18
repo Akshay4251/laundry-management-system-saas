@@ -1,16 +1,18 @@
 // app/api/services/[id]/toggle/route.ts
+
 import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { apiResponse } from '@/lib/api-response';
 
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
 // ============================================================================
-// PATCH /api/services/[id]/toggle - Toggle Service Active Status
+// PATCH /api/services/[id]/toggle - Toggle service active status
 // ============================================================================
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
     if (!session?.user?.businessId) {
@@ -22,25 +24,19 @@ export async function PATCH(
 
     // Check if service exists
     const existingService = await prisma.service.findFirst({
-      where: { id, businessId, deletedAt: null },
+      where: { id, businessId },
     });
 
     if (!existingService) {
       return apiResponse.notFound('Service not found');
     }
 
-    // Toggle isActive
+    // Toggle the active status
     const service = await prisma.service.update({
       where: { id },
       data: {
         isActive: !existingService.isActive,
       },
-    });
-
-    // Also update store services availability
-    await prisma.storeService.updateMany({
-      where: { serviceId: id },
-      data: { isAvailable: service.isActive },
     });
 
     return apiResponse.success(

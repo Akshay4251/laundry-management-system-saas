@@ -115,7 +115,7 @@ export function OrderHeader({ order }: OrderHeaderProps) {
     // Format items summary - using correct property names from OrderItemDetail
     const itemsSummary = order.items && order.items.length > 0
       ? order.items.slice(0, 5).map(item => 
-          `  • ${item.itemName || 'Item'} ${item.treatmentName ? `(${item.treatmentName})` : ''} x${item.quantity}`
+          `  • ${item.itemName || 'Item'} ${item.serviceName ? `(${item.serviceName})` : ''} x${item.quantity}`
         ).join('\n') + (order.items.length > 5 ? `\n  ... and ${order.items.length - 5} more items` : '')
       : '  No items listed';
 

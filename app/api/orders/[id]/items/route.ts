@@ -12,7 +12,7 @@ import { Prisma } from '@prisma/client';
 
 interface AddItemInput {
   itemId: string;
-  treatmentId: string;
+  serviceId: string;
   quantity: number;
   unitPrice: number;
   expressPrice?: number | null;
@@ -92,31 +92,31 @@ export async function POST(
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // VALIDATE ITEMS & TREATMENTS
+    // VALIDATE ITEMS & SERVICES
     // ═══════════════════════════════════════════════════════════════════════
 
     const itemIds = [...new Set(items.map(i => i.itemId))];
-    const treatmentIds = [...new Set(items.map(i => i.treatmentId))];
+    const serviceIds = [...new Set(items.map(i => i.serviceId))];
 
-    const [dbItems, dbTreatments] = await Promise.all([
+    const [dbItems, dbServices] = await Promise.all([
       prisma.item.findMany({
         where: { id: { in: itemIds }, businessId, isActive: true, deletedAt: null },
       }),
-      prisma.treatment.findMany({
-        where: { id: { in: treatmentIds }, businessId, isActive: true },
+      prisma.service.findMany({
+        where: { id: { in: serviceIds }, businessId, isActive: true },
       }),
     ]);
 
     const itemMap = new Map(dbItems.map(i => [i.id, i]));
-    const treatmentMap = new Map(dbTreatments.map(t => [t.id, t]));
+    const serviceMap = new Map(dbServices.map(t => [t.id, t]));
 
     // Validate each item
     for (const item of items) {
       if (!itemMap.has(item.itemId)) {
         return apiResponse.badRequest(`Item not found: ${item.itemId}`);
       }
-      if (!treatmentMap.has(item.treatmentId)) {
-        return apiResponse.badRequest(`Treatment not found: ${item.treatmentId}`);
+      if (!serviceMap.has(item.serviceId)) {
+        return apiResponse.badRequest(`Service not found: ${item.serviceId}`);
       }
       if (item.quantity < 1) {
         return apiResponse.badRequest('Quantity must be at least 1');
@@ -167,7 +167,7 @@ export async function POST(
       const createdItems = await Promise.all(
         items.map(async (item, index) => {
           const dbItem = itemMap.get(item.itemId)!;
-          const dbTreatment = treatmentMap.get(item.treatmentId)!;
+          const dbService = serviceMap.get(item.serviceId)!;
           
           const tagNumber = generateTagNumber(
             order.orderNumber, 
@@ -185,10 +185,10 @@ export async function POST(
               orderId: order.id,
               storeId: order.storeId,
               itemId: item.itemId,
-              treatmentId: item.treatmentId,
+              serviceId: item.serviceId,
               tagNumber,
               itemName: dbItem.name,
-              treatmentName: dbTreatment.name,
+              serviceName: dbService.name,
               quantity: item.quantity,
               status: 'IN_PROGRESS',
               unitPrice: item.unitPrice,
@@ -200,7 +200,7 @@ export async function POST(
             },
             include: {
               item: { select: { id: true, name: true, iconUrl: true } },
-              treatment: { select: { id: true, name: true, code: true } },
+              service: { select: { id: true, name: true, code: true } },
             },
           });
         })
@@ -279,9 +279,9 @@ export async function POST(
       itemId: item.itemId,
       itemName: item.itemName,
       itemIcon: item.item?.iconUrl || null,
-      treatmentId: item.treatmentId,
-      treatmentName: item.treatmentName,
-      treatmentCode: item.treatment?.code || null,
+      serviceId: item.serviceId,
+      serviceName: item.serviceName,
+      serviceCode: item.service?.code || null,
       quantity: item.quantity,
       unitPrice: parseFloat(item.unitPrice.toString()),
       subtotal: parseFloat(item.subtotal.toString()),
@@ -357,7 +357,7 @@ export async function GET(
         items: {
           include: {
             item: { select: { id: true, name: true, iconUrl: true, category: true } },
-            treatment: { select: { id: true, name: true, code: true } },
+            service: { select: { id: true, name: true, code: true } },
           },
           orderBy: { createdAt: 'asc' },
         },
@@ -377,9 +377,9 @@ export async function GET(
       itemName: item.itemName,
       itemIcon: item.item?.iconUrl || null,
       itemCategory: item.item?.category || null,
-      treatmentId: item.treatmentId,
-      treatmentName: item.treatmentName,
-      treatmentCode: item.treatment?.code || null,
+      serviceId: item.serviceId,
+      serviceName: item.serviceName,
+      serviceCode: item.service?.code || null,
       quantity: item.quantity,
       unitPrice: parseFloat(item.unitPrice.toString()),
       subtotal: parseFloat(item.subtotal.toString()),

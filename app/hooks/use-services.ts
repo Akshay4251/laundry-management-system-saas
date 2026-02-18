@@ -4,72 +4,54 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-
-// Types
-export interface Service {
-  id: string;
-  name: string;
-  description?: string | null;
-  category: 'GARMENT' | 'HOUSEHOLD' | 'SPECIALTY';
-  iconUrl?: string | null; // ✅ Only iconUrl, no Lucide fields
-  basePrice: number;
-  expressPrice: number | null;
-  unit: string;
-  turnaroundTime: number;
-  serviceTypes: string[];
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface ServiceStats {
-  total: number;
-  active: number;
-  inactive: number;
-  byCategory: Record<string, number>;
-}
-
-export interface ServiceFilters {
-  storeId?: string;
-  search?: string;
-  category?: string;
-  activeOnly?: boolean;
-  page?: number;
-  limit?: number;
-}
-
-export interface CreateServiceInput {
-  name: string;
-  description?: string | null;
-  category: 'GARMENT' | 'HOUSEHOLD' | 'SPECIALTY';
-  iconUrl?: string | null; // ✅ Only iconUrl
-  basePrice: number;
-  expressPrice?: number | null;
-  unit?: string;
-  turnaroundTime?: number;
-  serviceTypes?: string[];
-  isActive?: boolean;
-}
-
-export interface UpdateServiceInput extends Partial<CreateServiceInput> {}
+import type { 
+  Service, 
+  ServiceStats, 
+  ServiceFilters, 
+  CreateServiceInput, 
+  UpdateServiceInput 
+} from '@/app/types/service';
 
 // ============================================================================
-// Main Hook: useServices
+// Query Keys
 // ============================================================================
-export function useServices(filters: ServiceFilters = {}) {
+
+export const serviceKeys = {
+  all: ['services'] as const,
+  lists: () => [...serviceKeys.all, 'list'] as const,
+  list: (filters: ServiceFilters) => [...serviceKeys.lists(), filters] as const,
+  details: () => [...serviceKeys.all, 'detail'] as const,
+  detail: (id: string) => [...serviceKeys.details(), id] as const,
+};
+
+// ============================================================================
+// Hook: useServices - List services
+// ============================================================================
+
+interface UseServicesReturn {
+  services: Service[];
+  stats: ServiceStats | undefined;
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  } | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  refetch: () => void;
+}
+
+export function useServices(filters: ServiceFilters = {}): UseServicesReturn {
   const queryClient = useQueryClient();
 
-  // Fetch services
   const query = useQuery({
-    queryKey: ['services', filters],
+    queryKey: serviceKeys.list(filters),
     queryFn: async () => {
       const params = new URLSearchParams();
 
-      if (filters.storeId) params.set('storeId', filters.storeId);
       if (filters.search) params.set('search', filters.search);
-      if (filters.category && filters.category !== 'all') {
-        params.set('category', filters.category.toUpperCase());
-      }
       if (filters.activeOnly) params.set('activeOnly', 'true');
       if (filters.page) params.set('page', filters.page.toString());
       if (filters.limit) params.set('limit', filters.limit.toString());
@@ -86,9 +68,8 @@ export function useServices(filters: ServiceFilters = {}) {
     staleTime: 30000, // 30 seconds
   });
 
-  // Invalidate and refetch
   const refetch = () => {
-    queryClient.invalidateQueries({ queryKey: ['services'] });
+    queryClient.invalidateQueries({ queryKey: serviceKeys.all });
   };
 
   return {
@@ -103,8 +84,32 @@ export function useServices(filters: ServiceFilters = {}) {
 }
 
 // ============================================================================
-// Hook: useCreateService
+// Hook: useSingleService - Get single service with item prices
 // ============================================================================
+
+export function useSingleService(id: string | null) {
+  return useQuery({
+    queryKey: serviceKeys.detail(id || ''),
+    queryFn: async () => {
+      if (!id) return null;
+
+      const response = await fetch(`/api/services/${id}`);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch service');
+      }
+
+      return response.json();
+    },
+    enabled: !!id,
+  });
+}
+
+// ============================================================================
+// Hook: useCreateService - Create service
+// ============================================================================
+
 export function useCreateService() {
   const queryClient = useQueryClient();
 
@@ -124,7 +129,9 @@ export function useCreateService() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: serviceKeys.all });
+      // Also invalidate items as they need to show the new service
+      queryClient.invalidateQueries({ queryKey: ['items'] });
       toast.success(data.message || 'Service created successfully');
     },
     onError: (error: Error) => {
@@ -134,19 +141,14 @@ export function useCreateService() {
 }
 
 // ============================================================================
-// Hook: useUpdateService
+// Hook: useUpdateService - Update service
 // ============================================================================
+
 export function useUpdateService() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: UpdateServiceInput;
-    }) => {
+    mutationFn: async ({ id, data }: { id: string; data: UpdateServiceInput }) => {
       const response = await fetch(`/api/services/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -161,7 +163,8 @@ export function useUpdateService() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: serviceKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['items'] });
       toast.success(data.message || 'Service updated successfully');
     },
     onError: (error: Error) => {
@@ -171,8 +174,9 @@ export function useUpdateService() {
 }
 
 // ============================================================================
-// Hook: useDeleteService
+// Hook: useDeleteService - Delete service
 // ============================================================================
+
 export function useDeleteService() {
   const queryClient = useQueryClient();
 
@@ -190,7 +194,8 @@ export function useDeleteService() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: serviceKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['items'] });
       toast.success(data.message || 'Service deleted successfully');
     },
     onError: (error: Error) => {
@@ -200,8 +205,9 @@ export function useDeleteService() {
 }
 
 // ============================================================================
-// Hook: useToggleService
+// Hook: useToggleService - Toggle service active status
 // ============================================================================
+
 export function useToggleService() {
   const queryClient = useQueryClient();
 
@@ -219,7 +225,7 @@ export function useToggleService() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: serviceKeys.all });
       toast.success(data.message);
     },
     onError: (error: Error) => {
@@ -229,23 +235,9 @@ export function useToggleService() {
 }
 
 // ============================================================================
-// Hook: useSingleService
+// Hook: useActiveServices - Get only active services (for order creation)
 // ============================================================================
-export function useSingleService(id: string | null) {
-  return useQuery({
-    queryKey: ['service', id],
-    queryFn: async () => {
-      if (!id) return null;
 
-      const response = await fetch(`/api/services/${id}`);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch service');
-      }
-
-      return response.json();
-    },
-    enabled: !!id,
-  });
+export function useActiveServices() {
+  return useServices({ activeOnly: true });
 }

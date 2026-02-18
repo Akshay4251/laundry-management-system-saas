@@ -33,7 +33,7 @@ export function TagTemplate({ order }: TagTemplateProps) {
                   {item.itemName}
                 </p>
                 <p className="text-xs font-bold uppercase">
-                  {item.treatmentName || "-"}
+                  {item.serviceName || "-"}
                 </p>
                 <p className="text-xs text-gray-600">
                   {item.color || "-"} • {item.brand || "-"}

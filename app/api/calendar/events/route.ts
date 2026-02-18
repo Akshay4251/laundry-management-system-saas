@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
               },
             },
           },
-          treatment: {
+          service: {
             select: {
               turnaroundHours: true,
             },
@@ -217,7 +217,7 @@ export async function GET(req: NextRequest) {
         if (!item.workshopSentDate) continue;
 
         // Calculate expected return date
-        const turnaroundHours = item.treatment?.turnaroundHours || 48; // Default 48 hours
+        const turnaroundHours = item.service?.turnaroundHours || 48; // Default 48 hours
         const expectedReturn = new Date(item.workshopSentDate);
         expectedReturn.setHours(expectedReturn.getHours() + turnaroundHours);
 

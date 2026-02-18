@@ -87,7 +87,7 @@ export default function CreateOrderPage() {
 
   // State
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTreatmentId, setSelectedTreatmentId] = useState<string | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<CartOrderItem[]>([]);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -102,16 +102,16 @@ export default function CreateOrderPage() {
   const [isCreatingPickup, setIsCreatingPickup] = useState(false);
 
   // Fetch items
-  const { items, treatments, isLoading: servicesLoading, isError } = useItems({
+  const { items, services, isLoading: servicesLoading, isError } = useItems({
     activeOnly: true,
   });
 
-  // Auto-select first treatment
+  // Auto-select first service
   useEffect(() => {
-    if (treatments.length > 0 && !selectedTreatmentId) {
-      setSelectedTreatmentId(treatments[0].id);
+    if (services.length > 0 && !selectedServiceId) {
+      setSelectedServiceId(services[0].id);
     }
-  }, [treatments, selectedTreatmentId]);
+  }, [services, selectedServiceId]);
 
   // Auto-calculate delivery date when pickup date changes
   useEffect(() => {
@@ -130,23 +130,23 @@ export default function CreateOrderPage() {
     }
   }, [pickupModalOpen]);
 
-  const activeTreatment = treatments.find(t => t.id === selectedTreatmentId);
+  const activeService = services.find(t => t.id === selectedServiceId);
 
   // ============================================================================
   // HANDLERS
   // ============================================================================
 
   const toggleItem = (item: Item) => {
-    if (!selectedTreatmentId || !activeTreatment) return;
+    if (!selectedServiceId || !activeService) return;
 
-    const priceEntry = item.prices?.find(p => p.treatmentId === selectedTreatmentId);
+    const priceEntry = item.prices?.find(p => p.serviceId === selectedServiceId);
     
     if (!priceEntry || !priceEntry.isAvailable) {
-      toast.error(`${item.name} not available for ${activeTreatment.name}`);
+      toast.error(`${item.name} not available for ${activeService.name}`);
       return;
     }
 
-    const cartKey = `${item.id}-${selectedTreatmentId}`;
+    const cartKey = `${item.id}-${selectedServiceId}`;
     const existingIndex = orderItems.findIndex(oi => oi.cartKey === cartKey);
 
     if (existingIndex > -1) {
@@ -159,9 +159,9 @@ export default function CreateOrderPage() {
         {
           cartKey,
           id: item.id,
-          treatmentId: selectedTreatmentId,
+          serviceId: selectedServiceId,
           name: item.name,
-          treatmentName: activeTreatment.name,
+          serviceName: activeService.name,
           quantity: 1,
           price: unitPrice,
           iconUrl: item.iconUrl,
@@ -345,7 +345,7 @@ export default function CreateOrderPage() {
               <p className="text-sm text-slate-500">
                 {pickupEnabled 
                   ? 'Create walk-in order or schedule a pickup'
-                  : 'Search items, select treatment, and add to cart'
+                  : 'Search items, select service, and add to cart'
                 }
               </p>
             </div>
@@ -406,15 +406,15 @@ export default function CreateOrderPage() {
             </div>
           </motion.div>
 
-          {/* TREATMENT TABS */}
+          {/* SERVICE TABS */}
           <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-4">
-            {treatments.map((t) => (
+            {services.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setSelectedTreatmentId(t.id)}
+                onClick={() => setSelectedServiceId(t.id)}
                 className={cn(
                   "flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold border-2 transition-all",
-                  selectedTreatmentId === t.id
+                  selectedServiceId === t.id
                     ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
                     : "bg-white border-slate-200 text-slate-600 hover:border-blue-300"
                 )}
@@ -466,7 +466,7 @@ export default function CreateOrderPage() {
                           <ServiceGrid
                             items={categoryItems}
                             orderItems={orderItems}
-                            selectedTreatmentId={selectedTreatmentId}
+                            selectedServiceId={selectedServiceId}
                             onToggleItem={toggleItem}
                             onUpdateQuantity={updateItemQuantity}
                           />
@@ -781,7 +781,7 @@ export default function CreateOrderPage() {
 interface ServiceGridProps {
   items: Item[];
   orderItems: CartOrderItem[];
-  selectedTreatmentId: string | null;
+  selectedServiceId: string | null;
   onToggleItem: (item: Item) => void;
   onUpdateQuantity: (cartKey: string, quantity: number) => void;
 }
@@ -789,7 +789,7 @@ interface ServiceGridProps {
 function ServiceGrid({ 
   items, 
   orderItems, 
-  selectedTreatmentId, 
+  selectedServiceId, 
   onToggleItem, 
   onUpdateQuantity 
 }: ServiceGridProps) {
@@ -797,10 +797,10 @@ function ServiceGrid({
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       <AnimatePresence mode="popLayout">
         {items.map((item, index) => {
-          const priceEntry = item.prices?.find(p => p.treatmentId === selectedTreatmentId);
+          const priceEntry = item.prices?.find(p => p.serviceId === selectedServiceId);
           const isAvailable = priceEntry?.isAvailable ?? false;
           
-          const cartKey = selectedTreatmentId ? `${item.id}-${selectedTreatmentId}` : '';
+          const cartKey = selectedServiceId ? `${item.id}-${selectedServiceId}` : '';
           const cartItem = orderItems.find(oi => oi.cartKey === cartKey);
           const isSelected = !!cartItem;
           const quantity = cartItem?.quantity || 0;

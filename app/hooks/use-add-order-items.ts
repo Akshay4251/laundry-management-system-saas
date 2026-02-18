@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 interface AddItemInput {
   itemId: string;
-  treatmentId: string;
+  serviceId: string;
   quantity: number;
   unitPrice: number;
   expressPrice?: number | null;
@@ -35,9 +35,9 @@ interface AddItemsResponse {
       itemId: string;
       itemName: string;
       itemIcon: string | null;
-      treatmentId: string;
-      treatmentName: string;
-      treatmentCode: string | null;
+      serviceId: string;
+      serviceName: string;
+      serviceCode: string | null;
       quantity: number;
       unitPrice: number;
       subtotal: number;

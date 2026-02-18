@@ -475,7 +475,7 @@ export function OrderSummaryPanel({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-xs sm:text-sm text-slate-900 truncate">{item.name}</p>
-                    <p className="text-[10px] text-blue-600 font-bold uppercase">{item.treatmentName}</p>
+                    <p className="text-[10px] text-blue-600 font-bold uppercase">{item.serviceName}</p>
                     <p className="text-[10px] sm:text-xs text-slate-500 font-medium">₹{item.price.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">

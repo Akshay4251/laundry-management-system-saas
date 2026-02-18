@@ -299,7 +299,7 @@ export function OrderDialogs({
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-medium text-slate-900">{item.itemName}</p>
-                                {item.treatmentName && <Badge variant="outline" className="text-xs">{item.treatmentName}</Badge>}
+                                {item.serviceName && <Badge variant="outline" className="text-xs">{item.serviceName}</Badge>}
                               </div>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
                                 <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded font-mono">{item.tagNumber}</code>

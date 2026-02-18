@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
         item: {
           select: { id: true, name: true, iconUrl: true, category: true },
         },
-        treatment: {
+        service: {
           select: { id: true, name: true, code: true },
         },
       },
@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
       itemName: item.itemName,
       itemIcon: item.item?.iconUrl || null,
       itemCategory: item.item?.category || null,
-      treatmentName: item.treatmentName || item.treatment?.name || null,
+      serviceName: item.serviceName || item.service?.name || null,
       quantity: item.quantity,
       status: item.status,
       isExpress: item.isExpress,

@@ -94,7 +94,7 @@ export async function middleware(request: NextRequest) {
     '/order-review',
     '/stores',
     '/items',
-    '/treatments',
+    '/services',
     '/notifications',
     '/drivers',
   ];

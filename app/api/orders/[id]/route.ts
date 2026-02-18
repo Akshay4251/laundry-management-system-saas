@@ -30,6 +30,18 @@ export async function GET(
     const order = await prisma.order.findFirst({
       where: { id, businessId },
       include: {
+        // ✅ ADDED: Include business info for invoice
+        business: {
+          select: {
+            id: true,
+            businessName: true,
+            address: true,
+            phone: true,
+            email: true,
+            logoUrl: true,
+            gstNumber: true,
+          },
+        },
         customer: {
           select: {
             id: true,
@@ -55,7 +67,6 @@ export async function GET(
             email: true,
           },
         },
-        // Customer address linked to this order
         customerAddress: {
           select: {
             id: true,
@@ -78,7 +89,7 @@ export async function GET(
                 category: true,
               },
             },
-            treatment: {
+            service: {
               select: {
                 id: true,
                 name: true,
@@ -121,10 +132,10 @@ export async function GET(
       itemName: item.itemName,
       itemIcon: item.item?.iconUrl || null,
       itemCategory: item.item?.category || null,
-      treatmentId: item.treatmentId,
-      treatmentName: item.treatmentName || item.treatment?.name || null,
-      treatmentCode: item.treatment?.code || null,
-      turnaroundHours: item.treatment?.turnaroundHours || null,
+      serviceId: item.serviceId,
+      serviceName: item.serviceName || item.service?.name || null,
+      serviceCode: item.service?.code || null,
+      turnaroundHours: item.service?.turnaroundHours || null,
       quantity: item.quantity,
       unitPrice: parseFloat(item.unitPrice.toString()),
       subtotal: parseFloat(item.subtotal.toString()),
@@ -171,6 +182,17 @@ export async function GET(
       isExpress: order.priority === 'EXPRESS',
       customer: order.customer,
       store: order.store,
+
+      // ✅ ADDED: Business info for invoice header
+      business: {
+        id: order.business.id,
+        name: order.business.businessName,
+        address: order.business.address,
+        phone: order.business.phone,
+        email: order.business.email,
+        logoUrl: order.business.logoUrl,
+        gstNumber: order.business.gstNumber,
+      },
 
       // Driver assignment
       driverId: order.driverId,

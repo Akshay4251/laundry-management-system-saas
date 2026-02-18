@@ -6,7 +6,7 @@ import { customerApiResponse } from '@/lib/customer-api-response';
 import { authenticateCustomer } from '@/lib/customer-auth';
 
 // ============================================================================
-// GET /api/customer-app/services - Get rate card (items + treatments with prices)
+// GET /api/customer-app/services - Get rate card (items + services with prices)
 // ============================================================================
 
 export async function GET(req: NextRequest) {
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category');
 
-    // Get all active items with their treatment prices
+    // Get all active items with their service prices
     const items = await prisma.item.findMany({
       where: {
         businessId: customer.businessId,
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
         prices: {
           where: { isAvailable: true },
           include: {
-            treatment: {
+            service: {
               select: {
                 id: true,
                 name: true,
@@ -46,8 +46,8 @@ export async function GET(req: NextRequest) {
       orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
     });
 
-    // Get all active treatments for reference
-    const treatments = await prisma.treatment.findMany({
+    // Get all active services for reference
+    const services = await prisma.service.findMany({
       where: {
         businessId: customer.businessId,
         isActive: true,
@@ -69,12 +69,12 @@ export async function GET(req: NextRequest) {
       category: item.category,
       iconUrl: item.iconUrl,
       prices: item.prices
-        .filter((p) => p.treatment.isActive)
+        .filter((p) => p.service.isActive)
         .map((p) => ({
-          treatmentId: p.treatment.id,
-          treatmentName: p.treatment.name,
-          treatmentCode: p.treatment.code,
-          turnaroundHours: p.treatment.turnaroundHours,
+          serviceId: p.service.id,
+          serviceName: p.service.name,
+          serviceCode: p.service.code,
+          turnaroundHours: p.service.turnaroundHours,
           price: parseFloat(p.price.toString()),
           expressPrice: p.expressPrice
             ? parseFloat(p.expressPrice.toString())
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     return customerApiResponse.success({
       items: transformedItems,
       groupedItems,
-      treatments: treatments.map((t) => ({
+      services: services.map((t) => ({
         id: t.id,
         name: t.name,
         code: t.code,

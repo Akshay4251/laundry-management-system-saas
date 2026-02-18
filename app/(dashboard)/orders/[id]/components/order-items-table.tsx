@@ -209,7 +209,7 @@ export function OrderItemsTable({ order }: OrderItemsTableProps) {
                 </TableHead>
               )}
               <TableHead className={cn(!canSendToWorkshop && "pl-6")}>Item</TableHead>
-              <TableHead>Treatment</TableHead>
+              <TableHead>Service</TableHead>
               <TableHead>Tag #</TableHead>
               <TableHead className="text-center">Qty</TableHead>
               <TableHead>Price</TableHead>
@@ -281,7 +281,7 @@ export function OrderItemsTable({ order }: OrderItemsTableProps) {
                   
                   <TableCell>
                     <Badge variant="outline" className="font-normal rounded-full">
-                      {item.treatmentName || '-'}
+                      {item.serviceName || '-'}
                     </Badge>
                   </TableCell>
                   
@@ -370,9 +370,9 @@ export function OrderItemsTable({ order }: OrderItemsTableProps) {
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                    {item.treatmentName && (
+                    {item.serviceName && (
                       <Badge variant="outline" className="text-xs rounded-full">
-                        {item.treatmentName}
+                        {item.serviceName}
                       </Badge>
                     )}
                     <Badge className={cn(statusConfig.className, "text-xs")}>

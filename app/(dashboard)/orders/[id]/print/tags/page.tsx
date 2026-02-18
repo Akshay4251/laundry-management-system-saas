@@ -1,3 +1,4 @@
+//app/(dashboard)/orders/[id]/print/tags/page.tsx
 'use client';
 
 import { use, useEffect } from 'react';
@@ -64,9 +65,9 @@ export default function PrintTagsPage({ params }: PageProps) {
                 <div className="font-bold text-2xl uppercase leading-none mb-1">
                   {tag.itemName}
                 </div>
-                {tag.treatmentName && (
+                {tag.serviceName && (
                   <span className="text-[10px] bg-black text-white px-1 py-0.5 rounded uppercase font-bold">
-                    {tag.treatmentName}
+                    {tag.serviceName}
                   </span>
                 )}
                 {tag.isExpress && (

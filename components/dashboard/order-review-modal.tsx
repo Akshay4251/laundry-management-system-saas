@@ -229,7 +229,7 @@ export function OrderReviewModal({
         isExpress,
         items: items.map((item) => ({
           itemId: item.id,
-          treatmentId: item.treatmentId,
+          serviceId: item.serviceId,
           quantity: item.quantity,
           unitPrice: item.price,
           expressPrice: isExpress ? Math.round(item.price * EXPRESS_MULTIPLIER) : null,
@@ -454,7 +454,7 @@ export function OrderReviewModal({
                               <div className="flex items-start justify-between mb-2">
                                 <div>
                                   <p className="font-semibold text-slate-900 truncate">{item.name}</p>
-                                  <p className="text-xs text-blue-600 font-bold uppercase">{item.treatmentName}</p>
+                                  <p className="text-xs text-blue-600 font-bold uppercase">{item.serviceName}</p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <p className="text-sm text-slate-500">
                                       ₹{displayPrice} × {item.quantity}

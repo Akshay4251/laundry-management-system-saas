@@ -4,11 +4,10 @@ import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { apiResponse } from '@/lib/api-response';
-import { createServiceSchema } from '@/lib/validations/service';
-import { ItemCategory } from '@prisma/client';
+import { createServiceSchema, generateServiceCode } from '@/lib/validations/service';
 
 // ============================================================================
-// GET /api/services
+// GET /api/services - List all services
 // ============================================================================
 export async function GET(req: NextRequest) {
   try {
@@ -20,130 +19,70 @@ export async function GET(req: NextRequest) {
     const businessId = session.user.businessId;
     const { searchParams } = new URL(req.url);
 
-    const storeId = searchParams.get('storeId');
     const search = searchParams.get('search') || '';
-    const categoryParam = searchParams.get('category'); // ✅ Get as string first
     const activeOnly = searchParams.get('activeOnly') === 'true';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {
+    // Build where clause
+    const where: any = {
       businessId,
-      deletedAt: null,
     };
 
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
-        { serviceTypes: { hasSome: [search] } },
       ];
-    }
-
-    // ✅ Fixed: Check if categoryParam is valid and not 'ALL'
-    if (categoryParam && categoryParam !== 'ALL' && Object.values(ItemCategory).includes(categoryParam as ItemCategory)) {
-      where.category = categoryParam as ItemCategory;
     }
 
     if (activeOnly) {
       where.isActive = true;
     }
 
-    // Store-specific query
-    if (storeId) {
-      const [storeServices, total] = await Promise.all([
-        prisma.storeService.findMany({
-          where: {
-            storeId,
-            isAvailable: true,
-            service: where,
-          },
-          include: {
-            service: true,
-          },
-          skip,
-          take: limit,
-          orderBy: {
-            service: { name: 'asc' },
-          },
-        }),
-        prisma.storeService.count({
-          where: {
-            storeId,
-            isAvailable: true,
-            service: where,
-          },
-        }),
-      ]);
-
-      const services = storeServices.map((ss) => ({
-        id: ss.service.id,
-        name: ss.service.name,
-        description: ss.service.description,
-        category: ss.service.category,
-        iconUrl: ss.service.iconUrl,
-        price: parseFloat(ss.price.toString()),
-        basePrice: parseFloat(ss.service.basePrice.toString()),
-        expressPrice: ss.service.expressPrice
-          ? parseFloat(ss.service.expressPrice.toString())
-          : null,
-        unit: ss.service.unit,
-        turnaroundTime: ss.service.turnaroundTime,
-        serviceTypes: ss.service.serviceTypes,
-        isActive: ss.service.isActive,
-        storePrice: parseFloat(ss.price.toString()),
-        isAvailable: ss.isAvailable,
-      }));
-
-      return apiResponse.success({
-        services,
-        pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
-      });
-    }
-
-    // Base services query
-    const [services, total, counts] = await Promise.all([
+    // Fetch services with counts
+    const [services, total] = await Promise.all([
       prisma.service.findMany({
         where,
+        include: {
+          _count: {
+            select: {
+              prices: true,
+              orderItems: true,
+            },
+          },
+        },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         skip,
         take: limit,
-        orderBy: [{ category: 'asc' }, { name: 'asc' }],
       }),
       prisma.service.count({ where }),
-      prisma.service.groupBy({
-        by: ['category'],
-        where: { businessId, deletedAt: null },
-        _count: true,
-      }),
     ]);
 
-    const activeCount = await prisma.service.count({
-      where: { businessId, deletedAt: null, isActive: true },
-    });
+    // Get stats
+    const [activeCount, comboCount] = await Promise.all([
+      prisma.service.count({ where: { businessId, isActive: true } }),
+      prisma.service.count({ where: { businessId, isCombo: true } }),
+    ]);
 
+    // Transform services
     const transformedServices = services.map((service) => ({
       id: service.id,
       name: service.name,
+      code: service.code,
       description: service.description,
-      category: service.category,
       iconUrl: service.iconUrl,
-      basePrice: parseFloat(service.basePrice.toString()),
-      expressPrice: service.expressPrice
-        ? parseFloat(service.expressPrice.toString())
-        : null,
-      unit: service.unit,
-      turnaroundTime: service.turnaroundTime,
-      serviceTypes: service.serviceTypes,
+      isCombo: service.isCombo,
+      turnaroundHours: service.turnaroundHours,
       isActive: service.isActive,
+      sortOrder: service.sortOrder,
       createdAt: service.createdAt,
       updatedAt: service.updatedAt,
+      itemsCount: service._count.prices,
+      usageCount: service._count.orderItems,
     }));
-
-    const categoryCounts: Record<string, number> = {};
-    counts.forEach((c) => {
-      categoryCounts[c.category] = c._count;
-    });
 
     return apiResponse.success({
       services: transformedServices,
@@ -151,9 +90,14 @@ export async function GET(req: NextRequest) {
         total,
         active: activeCount,
         inactive: total - activeCount,
-        byCategory: categoryCounts,
+        combo: comboCount,
       },
-      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error('GET /api/services error:', error);
@@ -162,7 +106,7 @@ export async function GET(req: NextRequest) {
 }
 
 // ============================================================================
-// POST /api/services
+// POST /api/services - Create service
 // ============================================================================
 export async function POST(req: NextRequest) {
   try {
@@ -174,6 +118,12 @@ export async function POST(req: NextRequest) {
     const businessId = session.user.businessId;
     const body = await req.json();
 
+    // Generate code if not provided
+    if (!body.code && body.name) {
+      body.code = generateServiceCode(body.name);
+    }
+
+    // Validate input
     const validationResult = createServiceSchema.safeParse(body);
     if (!validationResult.success) {
       return apiResponse.badRequest(
@@ -184,70 +134,44 @@ export async function POST(req: NextRequest) {
 
     const data = validationResult.data;
 
-    // Check duplicate name
+    // Check for duplicate code
     const existingService = await prisma.service.findFirst({
       where: {
         businessId,
-        name: { equals: data.name, mode: 'insensitive' },
-        deletedAt: null,
+        code: data.code,
       },
     });
 
     if (existingService) {
-      return apiResponse.badRequest('A service with this name already exists');
+      return apiResponse.badRequest('A service with this code already exists');
     }
 
-    const expressPrice = data.expressPrice ?? Math.round(data.basePrice * 1.5);
-
+    // Create service
     const service = await prisma.service.create({
       data: {
         businessId,
         name: data.name,
+        code: data.code || generateServiceCode(data.name),
         description: data.description,
-        category: data.category as ItemCategory,
-        iconUrl: data.iconUrl || null,
-        basePrice: data.basePrice,
-        expressPrice,
-        unit: data.unit,
-        turnaroundTime: data.turnaroundTime,
-        serviceTypes: data.serviceTypes,
+        iconUrl: data.iconUrl,
+        isCombo: data.isCombo,
+        turnaroundHours: data.turnaroundHours,
         isActive: data.isActive,
+        sortOrder: data.sortOrder,
       },
     });
-
-    // Create store services
-    const stores = await prisma.store.findMany({
-      where: { businessId, isActive: true },
-      select: { id: true },
-    });
-
-    if (stores.length > 0) {
-      await prisma.storeService.createMany({
-        data: stores.map((store) => ({
-          storeId: store.id,
-          serviceId: service.id,
-          price: service.basePrice,
-          isAvailable: true,
-        })),
-        skipDuplicates: true,
-      });
-    }
 
     return apiResponse.created(
       {
         id: service.id,
         name: service.name,
+        code: service.code,
         description: service.description,
-        category: service.category,
         iconUrl: service.iconUrl,
-        basePrice: parseFloat(service.basePrice.toString()),
-        expressPrice: service.expressPrice
-          ? parseFloat(service.expressPrice.toString())
-          : null,
-        unit: service.unit,
-        turnaroundTime: service.turnaroundTime,
-        serviceTypes: service.serviceTypes,
+        isCombo: service.isCombo,
+        turnaroundHours: service.turnaroundHours,
         isActive: service.isActive,
+        sortOrder: service.sortOrder,
       },
       'Service created successfully'
     );

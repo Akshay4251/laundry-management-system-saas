@@ -5,14 +5,13 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { apiResponse } from '@/lib/api-response';
 import { updateServiceSchema } from '@/lib/validations/service';
-import { ItemCategory } from '@prisma/client'; // ✅ CHANGED
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
 // ============================================================================
-// GET /api/services/[id]
+// GET /api/services/[id] - Get single service
 // ============================================================================
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
@@ -25,14 +24,26 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const businessId = session.user.businessId;
 
     const service = await prisma.service.findFirst({
-      where: { id, businessId, deletedAt: null },
+      where: { id, businessId },
       include: {
-        storeServices: {
+        prices: {
           include: {
-            store: { select: { id: true, name: true } },
+            item: {
+              select: {
+                id: true,
+                name: true,
+                category: true,
+                iconUrl: true,
+              },
+            },
+          },
+          orderBy: {
+            item: { name: 'asc' },
           },
         },
-        _count: { select: { orderItems: true } }, // ✅ NOW WORKS
+        _count: {
+          select: { orderItems: true },
+        },
       },
     });
 
@@ -40,28 +51,30 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       return apiResponse.notFound('Service not found');
     }
 
+    // Transform prices
+    const itemPrices = service.prices.map((p) => ({
+      itemId: p.item.id,
+      itemName: p.item.name,
+      itemCategory: p.item.category,
+      itemIconUrl: p.item.iconUrl,
+      price: parseFloat(p.price.toString()),
+      expressPrice: p.expressPrice ? parseFloat(p.expressPrice.toString()) : null,
+      isAvailable: p.isAvailable,
+    }));
+
     return apiResponse.success({
       id: service.id,
       name: service.name,
+      code: service.code,
       description: service.description,
-      category: service.category,
       iconUrl: service.iconUrl,
-      basePrice: parseFloat(service.basePrice.toString()),
-      expressPrice: service.expressPrice
-        ? parseFloat(service.expressPrice.toString())
-        : null,
-      unit: service.unit,
-      turnaroundTime: service.turnaroundTime,
-      serviceTypes: service.serviceTypes,
+      isCombo: service.isCombo,
+      turnaroundHours: service.turnaroundHours,
       isActive: service.isActive,
+      sortOrder: service.sortOrder,
       createdAt: service.createdAt,
       updatedAt: service.updatedAt,
-      storeServices: service.storeServices.map((ss) => ({
-        storeId: ss.store.id,
-        storeName: ss.store.name,
-        price: parseFloat(ss.price.toString()),
-        isAvailable: ss.isAvailable,
-      })),
+      itemPrices,
       usageCount: service._count.orderItems,
     });
   } catch (error) {
@@ -71,7 +84,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 }
 
 // ============================================================================
-// PATCH /api/services/[id]
+// PATCH /api/services/[id] - Update service
 // ============================================================================
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
@@ -84,14 +97,16 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const businessId = session.user.businessId;
     const body = await req.json();
 
+    // Check if service exists
     const existingService = await prisma.service.findFirst({
-      where: { id, businessId, deletedAt: null },
+      where: { id, businessId },
     });
 
     if (!existingService) {
       return apiResponse.notFound('Service not found');
     }
 
+    // Validate input
     const validationResult = updateServiceSchema.safeParse(body);
     if (!validationResult.success) {
       return apiResponse.badRequest(
@@ -102,35 +117,33 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     const data = validationResult.data;
 
-    // Check duplicate name
-    if (data.name) {
+    // Check for duplicate code if code is being changed
+    if (data.code && data.code !== existingService.code) {
       const duplicateService = await prisma.service.findFirst({
         where: {
           businessId,
-          name: { equals: data.name, mode: 'insensitive' },
+          code: data.code,
           id: { not: id },
-          deletedAt: null,
         },
       });
 
       if (duplicateService) {
-        return apiResponse.badRequest('A service with this name already exists');
+        return apiResponse.badRequest('A service with this code already exists');
       }
     }
 
+    // Update service
     const service = await prisma.service.update({
       where: { id },
       data: {
-        ...(data.name && { name: data.name }),
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.code !== undefined && { code: data.code }),
         ...(data.description !== undefined && { description: data.description }),
-        ...(data.category && { category: data.category as ItemCategory }), // ✅ CHANGED
         ...(data.iconUrl !== undefined && { iconUrl: data.iconUrl }),
-        ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
-        ...(data.expressPrice !== undefined && { expressPrice: data.expressPrice }),
-        ...(data.unit && { unit: data.unit }),
-        ...(data.turnaroundTime !== undefined && { turnaroundTime: data.turnaroundTime }),
-        ...(data.serviceTypes && { serviceTypes: data.serviceTypes }),
+        ...(data.isCombo !== undefined && { isCombo: data.isCombo }),
+        ...(data.turnaroundHours !== undefined && { turnaroundHours: data.turnaroundHours }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
       },
     });
 
@@ -138,17 +151,13 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       {
         id: service.id,
         name: service.name,
+        code: service.code,
         description: service.description,
-        category: service.category,
         iconUrl: service.iconUrl,
-        basePrice: parseFloat(service.basePrice.toString()),
-        expressPrice: service.expressPrice
-          ? parseFloat(service.expressPrice.toString())
-          : null,
-        unit: service.unit,
-        turnaroundTime: service.turnaroundTime,
-        serviceTypes: service.serviceTypes,
+        isCombo: service.isCombo,
+        turnaroundHours: service.turnaroundHours,
         isActive: service.isActive,
+        sortOrder: service.sortOrder,
       },
       'Service updated successfully'
     );
@@ -159,7 +168,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 }
 
 // ============================================================================
-// DELETE /api/services/[id]
+// DELETE /api/services/[id] - Delete service
 // ============================================================================
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
@@ -171,15 +180,16 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const businessId = session.user.businessId;
 
+    // Check if service exists
     const existingService = await prisma.service.findFirst({
-      where: { id, businessId, deletedAt: null },
+      where: { id, businessId },
     });
 
     if (!existingService) {
       return apiResponse.notFound('Service not found');
     }
 
-    // Check active orders using this service
+    // Check for active orders using this service
     const activeOrderItems = await prisma.orderItem.count({
       where: {
         serviceId: id,
@@ -191,18 +201,13 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
 
     if (activeOrderItems > 0) {
       return apiResponse.badRequest(
-        `Cannot delete service with ${activeOrderItems} active order(s)`
+        `Cannot delete service with ${activeOrderItems} active order(s). Complete or cancel them first.`
       );
     }
 
-    await prisma.service.update({
+    // Delete service (this will cascade delete prices)
+    await prisma.service.delete({
       where: { id },
-      data: { deletedAt: new Date(), isActive: false },
-    });
-
-    await prisma.storeService.updateMany({
-      where: { serviceId: id },
-      data: { isAvailable: false },
     });
 
     return apiResponse.success(null, 'Service deleted successfully');

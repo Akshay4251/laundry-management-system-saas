@@ -62,7 +62,7 @@ export function InvoiceTemplate({ order }: InvoiceTemplateProps) {
                 </span>
               </td>
               <td className="py-2 uppercase text-xs">
-                {item.treatmentName || "-"}
+                {item.serviceName || "-"}
               </td>
               <td className="text-right py-2">{item.quantity}</td>
               <td className="text-right py-2">

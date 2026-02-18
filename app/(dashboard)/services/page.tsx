@@ -1,32 +1,27 @@
+//app/(dashboard)/services/page.tsx
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Plus,
   X,
-  Download,
   FilterX,
   Edit,
   Trash2,
   MoreVertical,
-  Check,
-  Clock,
-  Zap,
-  Shirt,
-  Home,
-  Sparkles,
   Loader2,
-  Package,
+  Wrench,
+  Clock,
+  Package2,
   SlidersHorizontal,
-  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -46,27 +41,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -75,116 +56,64 @@ import {
   useUpdateService,
   useDeleteService,
   useToggleService,
-  Service,
 } from '@/app/hooks/use-services';
+import type { Service, CreateServiceInput, UpdateServiceInput } from '@/app/types/service';
 import { toast } from 'sonner';
-import { ServiceIconDisplay } from '@/components/services/service-icon-display';
-import { ServiceIconPicker } from '@/components/services/service-icon-picker';
 
 // ============================================================================
-// CONSTANTS
+// SERVICE FORM MODAL
 // ============================================================================
 
-type CategoryType = 'all' | 'GARMENT' | 'HOUSEHOLD' | 'SPECIALTY';
-
-const CATEGORIES = [
-  { 
-    id: 'GARMENT' as const,
-    label: 'Garments',
-    icon: Shirt,
-    color: 'text-blue-600',
-    bg: 'bg-blue-600',
-    description: 'Shirts, Pants, Dresses'
-  },
-  { 
-    id: 'HOUSEHOLD' as const,
-    label: 'Household',
-    icon: Home,
-    color: 'text-purple-600',
-    bg: 'bg-purple-600',
-    description: 'Bedsheets, Curtains, Towels'
-  },
-  { 
-    id: 'SPECIALTY' as const,
-    label: 'Specialty',
-    icon: Sparkles,
-    color: 'text-orange-600',
-    bg: 'bg-orange-600',
-    description: 'Premium, Wedding, Leather'
-  },
-];
-
-const UNIT_OPTIONS = [
-  { value: 'piece', label: 'Per Piece' },
-  { value: 'kg', label: 'Per Kg' },
-  { value: 'set', label: 'Per Set' },
-  { value: 'pair', label: 'Per Pair' },
-  { value: 'meter', label: 'Per Meter' },
-];
-
-const PREDEFINED_SERVICE_TYPES = [
-  'Wash & Iron',
-  'Dry Clean',
-  'Iron Only',
-  'Steam Press',
-  'Wash & Fold',
-  'Starch',
-  'Special Care',
-];
-
-function formatTurnaroundTime(hours: number): string {
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
-}
-
-// ============================================================================
-// CREATE SERVICE MODAL (Same as before)
-// ============================================================================
-
-interface CreateServiceModalProps {
+interface ServiceFormModalProps {
   open: boolean;
   onClose: () => void;
+  service: Service | null;
 }
 
-function CreateServiceModal({ open, onClose }: CreateServiceModalProps) {
+function ServiceFormModal({ open, onClose, service }: ServiceFormModalProps) {
+  const isEditing = !!service;
   const createService = useCreateService();
+  const updateService = useUpdateService();
 
   const [formData, setFormData] = useState({
     name: '',
+    code: '',
     description: '',
-    category: 'GARMENT' as 'GARMENT' | 'HOUSEHOLD' | 'SPECIALTY',
-    iconUrl: null as string | null,
-    basePrice: 0,
-    expressPrice: null as number | null,
-    unit: 'piece',
-    turnaroundTime: 24,
-    serviceTypes: [] as string[],
+    turnaroundHours: 24,
+    isCombo: false,
     isActive: true,
+    sortOrder: 0,
   });
 
-  const [customServiceType, setCustomServiceType] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
 
-  useEffect(() => {
+  // Initialize form data
+  React.useEffect(() => {
     if (open) {
-      setFormData({
-        name: '',
-        description: '',
-        category: 'GARMENT',
-        iconUrl: null,
-        basePrice: 0,
-        expressPrice: null,
-        unit: 'piece',
-        turnaroundTime: 24,
-        serviceTypes: [],
-        isActive: true,
-      });
+      if (service) {
+        setFormData({
+          name: service.name,
+          code: service.code,
+          description: service.description || '',
+          turnaroundHours: service.turnaroundHours,
+          isCombo: service.isCombo,
+          isActive: service.isActive,
+          sortOrder: service.sortOrder,
+        });
+      } else {
+        setFormData({
+          name: '',
+          code: '',
+          description: '',
+          turnaroundHours: 24,
+          isCombo: false,
+          isActive: true,
+          sortOrder: 0,
+        });
+      }
       setErrors({});
-      setCustomServiceType('');
     }
-  }, [open]);
+  }, [open, service]);
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -197,29 +126,30 @@ function CreateServiceModal({ open, onClose }: CreateServiceModalProps) {
     }
   };
 
-  const addServiceType = (type: string) => {
-    if (type && !formData.serviceTypes.includes(type)) {
-      handleChange('serviceTypes', [...formData.serviceTypes, type]);
-    }
-  };
-
-  const removeServiceType = (type: string) => {
-    handleChange('serviceTypes', formData.serviceTypes.filter((t) => t !== type));
-  };
-
-  const handleAddCustomType = () => {
-    if (customServiceType.trim()) {
-      addServiceType(customServiceType.trim());
-      setCustomServiceType('');
+  // Auto-generate code from name
+  const handleNameChange = (name: string) => {
+    handleChange('name', name);
+    if (!isEditing) {
+      const autoCode = name
+        .toUpperCase()
+        .replace(/[^A-Z0-9\s]/g, '')
+        .replace(/\s+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+      handleChange('code', autoCode);
     }
   };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (formData.basePrice <= 0) newErrors.basePrice = 'Price must be greater than 0';
-    if (formData.expressPrice !== null && formData.expressPrice < formData.basePrice) {
-      newErrors.expressPrice = 'Express price should be higher than base price';
+    if (formData.name.length < 2) newErrors.name = 'Name must be at least 2 characters';
+    if (!formData.code.trim()) newErrors.code = 'Code is required';
+    if (!/^[A-Z][A-Z0-9_]*$/.test(formData.code)) {
+      newErrors.code = 'Code must be uppercase letters, numbers, and underscores';
+    }
+    if (formData.turnaroundHours < 1 || formData.turnaroundHours > 720) {
+      newErrors.turnaroundHours = 'Turnaround must be between 1 and 720 hours';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -229,197 +159,162 @@ function CreateServiceModal({ open, onClose }: CreateServiceModalProps) {
     if (!validate()) return;
 
     try {
-      await createService.mutateAsync({
-        name: formData.name,
-        description: formData.description || undefined,
-        category: formData.category,
-        iconUrl: formData.iconUrl,
-        basePrice: formData.basePrice,
-        expressPrice: formData.expressPrice || Math.round(formData.basePrice * 1.5),
-        unit: formData.unit,
-        turnaroundTime: formData.turnaroundTime,
-        serviceTypes: formData.serviceTypes,
+      const payload: CreateServiceInput | UpdateServiceInput = {
+        name: formData.name.trim(),
+        code: formData.code.trim(),
+        description: formData.description.trim() || null,
+        turnaroundHours: formData.turnaroundHours,
+        isCombo: formData.isCombo,
         isActive: formData.isActive,
-      });
+        sortOrder: formData.sortOrder,
+      };
+
+      if (isEditing) {
+        await updateService.mutateAsync({ id: service.id, data: payload });
+      } else {
+        await createService.mutateAsync(payload as CreateServiceInput);
+      }
+
       onClose();
     } catch (error) {
-      // Handled by hook
+      // Error handled by mutation
     }
   };
 
-  const isSubmitting = createService.isPending || isUploadingIcon;
+  const isSubmitting = createService.isPending || updateService.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add New Service</DialogTitle>
-          <DialogDescription>Create a new service for your laundry business</DialogDescription>
+          <DialogTitle>{isEditing ? 'Edit Service' : 'Add New Service'}</DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? 'Update service details'
+              : 'Create a new service type for your services'}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
-          <ServiceIconPicker
-            value={formData.iconUrl}
-            onChange={(url) => handleChange('iconUrl', url)}
-            category={formData.category}
-            onUploading={setIsUploadingIcon}
-          />
-
+          {/* Name & Code */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Service Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="name">
+                Service Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="name"
-                placeholder="e.g., Shirt, Saree, Bedsheet"
+                placeholder="e.g., Wash + Iron"
                 value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
+                onChange={(e) => handleNameChange(e.target.value)}
                 className={cn(errors.name && 'border-red-500')}
               />
               {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={formData.category} onValueChange={(v) => handleChange('category', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="GARMENT">Garments</SelectItem>
-                  <SelectItem value="HOUSEHOLD">Household</SelectItem>
-                  <SelectItem value="SPECIALTY">Specialty</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="code">
+                Code <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="code"
+                placeholder="WASH_IRON"
+                value={formData.code}
+                onChange={(e) => handleChange('code', e.target.value.toUpperCase())}
+                className={cn(errors.code && 'border-red-500')}
+                disabled={isEditing}
+              />
+              {errors.code && <p className="text-xs text-red-500">{errors.code}</p>}
+              {!isEditing && (
+                <p className="text-xs text-slate-500">Auto-generated from name, can be edited</p>
+              )}
             </div>
           </div>
 
+          {/* Description */}
           <div className="space-y-2">
             <Label>Description (Optional)</Label>
             <Textarea
-              placeholder="Add any details about this service..."
+              placeholder="Describe what this service includes..."
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              rows={2}
+              rows={3}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Base Price (₹) <span className="text-red-500">*</span></Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.basePrice || ''}
-                onChange={(e) => handleChange('basePrice', parseFloat(e.target.value) || 0)}
-                className={cn(errors.basePrice && 'border-red-500')}
-              />
-              {errors.basePrice && <p className="text-xs text-red-500">{errors.basePrice}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Express Price (₹)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Auto: 1.5x base"
-                value={formData.expressPrice || ''}
-                onChange={(e) => handleChange('expressPrice', e.target.value ? parseFloat(e.target.value) : null)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Unit</Label>
-              <Select value={formData.unit} onValueChange={(v) => handleChange('unit', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {UNIT_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+          {/* Turnaround Time */}
           <div className="space-y-2">
-            <Label>Turnaround Time (hours)</Label>
-            <Input
-              type="number"
-              min="1"
-              max="720"
-              value={formData.turnaroundTime}
-              onChange={(e) => handleChange('turnaroundTime', parseInt(e.target.value) || 24)}
-            />
-            <p className="text-xs text-slate-500">
-              ≈ {formatTurnaroundTime(formData.turnaroundTime)}
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <Label>Service Types</Label>
-            <div className="flex flex-wrap gap-2">
-              {PREDEFINED_SERVICE_TYPES.map((type) => {
-                const isSelected = formData.serviceTypes.includes(type);
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => isSelected ? removeServiceType(type) : addServiceType(type)}
-                    className={cn(
-                      'px-3 py-1.5 text-sm rounded-full border transition-all',
-                      isSelected
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50'
-                    )}
-                  >
-                    {type}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
+            <Label htmlFor="turnaround">
+              Turnaround Time (hours) <span className="text-red-500">*</span>
+            </Label>
+            <div className="flex items-center gap-3">
               <Input
-                placeholder="Add custom type..."
-                value={customServiceType}
-                onChange={(e) => setCustomServiceType(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCustomType())}
+                id="turnaround"
+                type="number"
+                min="1"
+                max="720"
+                value={formData.turnaroundHours}
+                onChange={(e) => handleChange('turnaroundHours', parseInt(e.target.value) || 24)}
+                className={cn('max-w-[200px]', errors.turnaroundHours && 'border-red-500')}
               />
-              <Button type="button" variant="outline" size="icon" onClick={handleAddCustomType}>
-                <Plus className="w-4 h-4" />
-              </Button>
+              <span className="text-sm text-slate-500">
+                ≈{' '}
+                {formData.turnaroundHours < 24
+                  ? `${formData.turnaroundHours}h`
+                  : `${Math.floor(formData.turnaroundHours / 24)}d ${
+                      formData.turnaroundHours % 24
+                    }h`}
+              </span>
             </div>
-            {formData.serviceTypes.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {formData.serviceTypes.map((type) => (
-                  <Badge key={type} variant="secondary" className="gap-1 pr-1">
-                    {type}
-                    <button onClick={() => removeServiceType(type)} className="ml-1 hover:bg-slate-200 rounded-full p-0.5">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
+            {errors.turnaroundHours && (
+              <p className="text-xs text-red-500">{errors.turnaroundHours}</p>
             )}
           </div>
 
+          {/* Combo Service Toggle */}
+          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div>
+              <Label className="font-medium text-blue-900">Combo Service</Label>
+              <p className="text-sm text-blue-700">
+                Is this a combination of multiple services? (e.g., Wash + Iron)
+              </p>
+            </div>
+            <Switch
+              checked={formData.isCombo}
+              onCheckedChange={(v) => handleChange('isCombo', v)}
+            />
+          </div>
+
+          {/* Active Status */}
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border">
             <div>
               <Label className="font-medium">Active Service</Label>
-              <p className="text-sm text-slate-500">Inactive services won't appear in order creation</p>
+              <p className="text-sm text-slate-500">
+                Inactive services won't appear when creating items
+              </p>
             </div>
-            <Switch checked={formData.isActive} onCheckedChange={(v) => handleChange('isActive', v)} />
+            <Switch
+              checked={formData.isActive}
+              onCheckedChange={(v) => handleChange('isActive', v)}
+            />
+          </div>
+
+          {/* Info Box */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-sm text-amber-800">
+              <strong>💡 Note:</strong> After creating a service, you can set prices for each
+              item in the Items & Pricing page.
+            </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Create Service
+            {isEditing ? 'Update Service' : 'Create Service'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -428,20 +323,8 @@ function CreateServiceModal({ open, onClose }: CreateServiceModalProps) {
 }
 
 // ============================================================================
-// EDIT & DELETE MODALS (Same as before - keeping brief for space)
+// DELETE SERVICE DIALOG
 // ============================================================================
-
-interface EditServiceModalProps {
-  open: boolean;
-  onClose: () => void;
-  service: Service | null;
-}
-
-function EditServiceModal({ open, onClose, service }: EditServiceModalProps) {
-  // ... same implementation as CreateServiceModal but for editing
-  // (keeping the same code structure, just showing signature for brevity)
-  return null; // Add full implementation from previous version
-}
 
 interface DeleteServiceDialogProps {
   open: boolean;
@@ -457,7 +340,9 @@ function DeleteServiceDialog({ open, onClose, service }: DeleteServiceDialogProp
     try {
       await deleteService.mutateAsync(service.id);
       onClose();
-    } catch (error) {}
+    } catch (error) {
+      // Error handled by mutation
+    }
   };
 
   if (!service) return null;
@@ -468,7 +353,8 @@ function DeleteServiceDialog({ open, onClose, service }: DeleteServiceDialogProp
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Service</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete <strong>"{service.name}"</strong>? This action cannot be undone.
+            Are you sure you want to delete <strong>"{service.name}"</strong>? This will also
+            remove all associated pricing. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -488,12 +374,127 @@ function DeleteServiceDialog({ open, onClose, service }: DeleteServiceDialogProp
 }
 
 // ============================================================================
-// MAIN SERVICES PAGE - WITH DROPDOWN FILTERS
+// SERVICE CARD COMPONENT
+// ============================================================================
+
+interface ServiceCardProps {
+  service: Service;
+  index: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggle: () => void;
+}
+
+function ServiceCard({ service, index, onEdit, onDelete, onToggle }: ServiceCardProps) {
+  const formatTurnaround = (hours: number) => {
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2, delay: index * 0.03 }}
+      className={cn(
+        'relative bg-white border-2 rounded-2xl p-5 transition-all duration-200 group',
+        service.isActive
+          ? 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+          : 'border-slate-100 opacity-60'
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="font-bold text-base text-slate-900">{service.name}</h3>
+            {service.isCombo && (
+              <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 border-blue-200">
+                Combo
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 font-mono bg-slate-50 px-2 py-1 rounded inline-block">
+            {service.code}
+          </p>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>
+              <Edit className="w-4 h-4 mr-2" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onToggle}>
+              {service.isActive ? 'Deactivate' : 'Activate'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-red-600" onClick={onDelete}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Description */}
+      {service.description && (
+        <p className="text-sm text-slate-600 mb-4 line-clamp-2">{service.description}</p>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 pt-4 border-t">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+            <Clock className="w-4 h-4 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Turnaround</p>
+            <p className="font-semibold text-sm text-slate-900">{formatTurnaround(service.turnaroundHours)}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+            <Package2 className="w-4 h-4 text-purple-600" />
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Items Priced</p>
+            <p className="font-semibold text-sm text-slate-900">{service.itemsCount || 0}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Inactive Badge */}
+      {!service.isActive && (
+        <div className="absolute top-3 right-3">
+          <Badge variant="secondary" className="text-xs">
+            Inactive
+          </Badge>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+// ============================================================================
+// MAIN SERVICES PAGE
 // ============================================================================
 
 export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryType>('all');
   const [showActiveOnly, setShowActiveOnly] = useState(false);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -502,99 +503,37 @@ export default function ServicesPage() {
 
   const { services, stats, isLoading, isError, refetch } = useServices({
     search: searchQuery,
-    category: categoryFilter,
     activeOnly: showActiveOnly,
   });
 
   const toggleService = useToggleService();
 
-  const groupedServices = useMemo(() => {
-    const groups: Record<string, Service[]> = {};
-    services.forEach((service) => {
-      if (!groups[service.category]) groups[service.category] = [];
-      groups[service.category].push(service);
-    });
-    return groups;
-  }, [services]);
-
-  const hasActiveFilters = searchQuery || categoryFilter !== 'all' || showActiveOnly;
   const clearSearch = () => setSearchQuery('');
-  const clearFilters = () => {
-    setSearchQuery('');
-    setCategoryFilter('all');
-    setShowActiveOnly(false);
-  };
-
-  const activeFiltersCount = [
-    categoryFilter !== 'all',
-    showActiveOnly,
-  ].filter(Boolean).length;
-
-  const handleExport = () => {
-    const headers = ['Name', 'Category', 'Base Price', 'Express Price', 'Unit', 'Status'];
-    const rows = services.map((s) => [
-      s.name,
-      s.category,
-      s.basePrice,
-      s.expressPrice || 'N/A',
-      s.unit,
-      s.isActive ? 'Active' : 'Inactive',
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `services-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="flex flex-col h-full">
-      {/* ✅ Header with Search + Filter Dropdown */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="px-4 lg:px-6 py-6"
-      >
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="px-4 lg:px-6 py-6">
         {/* Title Row */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 mb-1">Services</h1>
             <p className="text-sm text-slate-500">
-              {stats?.active || 0} active · {stats?.total || 0} total
+              {stats?.active || 0} active · {stats?.total || 0} total · {stats?.combo || 0} combo
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleExport}
-              className="h-10 rounded-full border-slate-200 hover:bg-slate-50"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="h-10 rounded-full bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Service
-            </Button>
-          </div>
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="h-10 rounded-full bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Service
+          </Button>
         </div>
 
-        {/* ✅ Search Bar + Filter Dropdown in ONE LINE */}
+        {/* Search + Filter */}
         <div className="flex gap-3">
-          {/* Search Bar - Takes most space */}
+          {/* Search Bar */}
           <div className="flex-1">
             <div
               className={cn(
@@ -633,101 +572,41 @@ export default function ServicesPage() {
             </div>
           </div>
 
-          {/* ✅ Filter Dropdown */}
+          {/* Filter Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  'h-12 px-4 rounded-full border-slate-200 hover:bg-slate-50 relative',
-                  activeFiltersCount > 0 && 'border-blue-400 bg-blue-50 hover:bg-blue-100'
+                  'h-12 px-4 rounded-full border-slate-200 hover:bg-slate-50',
+                  showActiveOnly && 'border-blue-400 bg-blue-50 hover:bg-blue-100'
                 )}
               >
                 <SlidersHorizontal className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Filters</span>
-                {activeFiltersCount > 0 && (
+                {showActiveOnly && (
                   <Badge
                     variant="default"
                     className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center bg-blue-600 text-white text-xs"
                   >
-                    {activeFiltersCount}
+                    1
                   </Badge>
                 )}
-                <ChevronDown className="w-4 h-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel className="flex items-center justify-between">
-                <span>Filter Services</span>
-                {activeFiltersCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <FilterX className="w-3 h-3 mr-1" />
-                    Clear
-                  </Button>
-                )}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-
-              {/* Category Filter */}
-              <div className="px-2 py-2">
-                <Label className="text-xs font-medium text-slate-500 mb-2 block">
-                  Category
-                </Label>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setCategoryFilter('all')}
-                    className={cn(
-                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
-                      categoryFilter === 'all'
-                        ? 'bg-slate-900 text-white'
-                        : 'hover:bg-slate-100 text-slate-700'
-                    )}
-                  >
-                    <Package className="w-4 h-4" />
-                    All Categories
-                    {categoryFilter === 'all' && <Check className="w-4 h-4 ml-auto" />}
-                  </button>
-                  {CATEGORIES.map((cat) => {
-                    const Icon = cat.icon;
-                    const isActive = categoryFilter === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => setCategoryFilter(cat.id)}
-                        className={cn(
-                          'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors',
-                          isActive
-                            ? `${cat.bg} text-white`
-                            : 'hover:bg-slate-100 text-slate-700'
-                        )}
-                      >
-                        <Icon className="w-4 h-4" />
-                        {cat.label}
-                        {isActive && <Check className="w-4 h-4 ml-auto" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <DropdownMenuSeparator />
-
-              {/* Status Filter */}
               <DropdownMenuCheckboxItem
                 checked={showActiveOnly}
                 onCheckedChange={setShowActiveOnly}
                 className="py-3"
               >
                 <div className="flex items-center gap-2">
-                  <div className={cn(
-                    'w-2 h-2 rounded-full',
-                    showActiveOnly ? 'bg-green-600' : 'bg-slate-300'
-                  )} />
+                  <div
+                    className={cn(
+                      'w-2 h-2 rounded-full',
+                      showActiveOnly ? 'bg-green-600' : 'bg-slate-300'
+                    )}
+                  />
                   Show Active Only
                 </div>
               </DropdownMenuCheckboxItem>
@@ -735,7 +614,7 @@ export default function ServicesPage() {
           </DropdownMenu>
         </div>
 
-        {/* Search Results Count */}
+        {/* Search Results */}
         <AnimatePresence>
           {searchQuery && (
             <motion.p
@@ -744,13 +623,14 @@ export default function ServicesPage() {
               exit={{ opacity: 0, height: 0 }}
               className="text-xs text-slate-500 mt-3 ml-1"
             >
-              Found <span className="font-medium text-slate-700">{services.length}</span> service{services.length !== 1 ? 's' : ''}
+              Found <span className="font-medium text-slate-700">{services.length}</span> service
+              {services.length !== 1 ? 's' : ''}
             </motion.p>
           )}
         </AnimatePresence>
       </motion.div>
 
-      {/* ✅ Content Area - Original Background (White) */}
+      {/* Content */}
       <div className="flex-1 overflow-auto px-4 lg:px-6 pb-6">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
@@ -771,16 +651,23 @@ export default function ServicesPage() {
             className="text-center py-20 bg-white rounded-2xl border border-slate-200"
           >
             <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="w-10 h-10 text-slate-400" />
+              <Wrench className="w-10 h-10 text-slate-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
-              No services found
-            </h3>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">No services found</h3>
             <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
-              {hasActiveFilters ? 'Try adjusting your filters to see more results' : 'Get started by creating your first service'}
+              {searchQuery || showActiveOnly
+                ? 'Try adjusting your filters to see more results'
+                : 'Get started by creating your first service'}
             </p>
-            {hasActiveFilters ? (
-              <Button variant="ghost" onClick={clearFilters} className="rounded-full">
+            {searchQuery || showActiveOnly ? (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowActiveOnly(false);
+                }}
+                className="rounded-full"
+              >
                 <FilterX className="w-4 h-4 mr-2" />
                 Clear Filters
               </Button>
@@ -792,184 +679,39 @@ export default function ServicesPage() {
             )}
           </motion.div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-          >
-            <Accordion
-              type="multiple"
-              defaultValue={['GARMENT', 'HOUSEHOLD', 'SPECIALTY']}
-              className="space-y-4"
-            >
-              {CATEGORIES.map((category) => {
-                const categoryServices = groupedServices[category.id] || [];
-                if (categoryServices.length === 0) return null;
-
-                const CategoryIcon = category.icon;
-
-                return (
-                  <AccordionItem key={category.id} value={category.id} className="border-0">
-                    <AccordionTrigger className="px-5 py-4 bg-white border border-slate-200 rounded-2xl hover:no-underline hover:bg-slate-50 hover:border-slate-300 transition-all data-[state=open]:rounded-b-none data-[state=open]:border-b-0">
-                      <div className="flex items-center gap-3">
-                        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', category.bg)}>
-                          <CategoryIcon className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <span className="text-base font-semibold text-slate-900 block">
-                            {category.label}
-                          </span>
-                          <span className="text-xs text-slate-500">
-                            {categoryServices.length} service{categoryServices.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="bg-white border border-t-0 border-slate-200 rounded-b-2xl px-5 pb-6 pt-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        <AnimatePresence mode="popLayout">
-                          {categoryServices.map((service, index) => (
-                            <ServiceCard
-                              key={service.id}
-                              service={service}
-                              index={index}
-                              onEdit={() => setEditingService(service)}
-                              onDelete={() => setDeletingService(service)}
-                              onToggle={() => toggleService.mutate(service.id)}
-                            />
-                          ))}
-                        </AnimatePresence>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <AnimatePresence mode="popLayout">
+                {services.map((service, index) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    index={index}
+                    onEdit={() => setEditingService(service)}
+                    onDelete={() => setDeletingService(service)}
+                    onToggle={() => toggleService.mutate(service.id)}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
           </motion.div>
         )}
       </div>
 
       {/* Modals */}
-      <CreateServiceModal open={showCreateModal} onClose={() => setShowCreateModal(false)} />
-      <EditServiceModal open={!!editingService} onClose={() => setEditingService(null)} service={editingService} />
-      <DeleteServiceDialog open={!!deletingService} onClose={() => setDeletingService(null)} service={deletingService} />
+      <ServiceFormModal
+        open={showCreateModal || !!editingService}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingService(null);
+        }}
+        service={editingService}
+      />
+      <DeleteServiceDialog
+        open={!!deletingService}
+        onClose={() => setDeletingService(null)}
+        service={deletingService}
+      />
     </div>
-  );
-}
-
-// ============================================================================
-// SERVICE CARD - ORIGINAL BACKGROUND (WHITE)
-// ============================================================================
-interface ServiceCardProps {
-  service: Service;
-  index: number;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggle: () => void;
-}
-
-function ServiceCard({ service, index, onEdit, onDelete, onToggle }: ServiceCardProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2, delay: index * 0.03 }}
-      className={cn(
-        'relative bg-slate-200 border-2 rounded-2xl p-5 transition-all duration-200 group',
-        service.isActive
-          ? 'border-slate-300 hover:border-slate-400 hover:shadow-md'
-          : 'border-slate-200 opacity-60'
-      )}
-    >
-      {/* Header: Icon + Title + Menu */}
-      <div className="flex items-start gap-3 mb-4">
-        <ServiceIconDisplay
-          iconUrl={service.iconUrl}
-          name={service.name}
-          size="lg"
-          showBackground
-        />
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-base text-slate-900 truncate mb-1.5">
-            {service.name}
-          </h3>
-          <div className="flex items-center gap-1.5 text-sm text-slate-700">
-            <Clock className="w-3.5 h-3.5" />
-            <span className="font-medium">{formatTurnaroundTime(service.turnaroundTime)}</span>
-          </div>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-300"
-            >
-              <MoreVertical className="w-4.5 h-4.5 text-slate-700" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <Edit className="w-4 h-4 mr-2" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onToggle}>
-              {service.isActive ? 'Deactivate' : 'Activate'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600" onClick={onDelete}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Service Types */}
-      {service.serviceTypes && service.serviceTypes.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {service.serviceTypes.slice(0, 2).map((type, idx) => (
-            <span
-              key={idx}
-              className="text-xs px-2.5 py-1 rounded-full bg-white border border-slate-300 text-slate-700 font-semibold shadow-sm"
-            >
-              {type}
-            </span>
-          ))}
-          {service.serviceTypes.length > 2 && (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-white border border-slate-300 text-slate-600 font-semibold shadow-sm">
-              +{service.serviceTypes.length - 2}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Pricing */}
-      <div className="flex items-end justify-between pt-3 border-t-2 border-slate-300">
-        <div>
-          <p className="text-xs text-slate-600 mb-1 font-bold uppercase tracking-wide">Base</p>
-          <p className="font-bold text-2xl text-slate-900">₹{service.basePrice}</p>
-        </div>
-        {service.expressPrice && (
-          <div className="text-right">
-            <p className="text-xs text-blue-700 mb-1 flex items-center justify-end gap-1 font-bold uppercase tracking-wide">
-              <Zap className="w-3.5 h-3.5 fill-current" />
-              Express
-            </p>
-            <p className="font-bold text-2xl text-blue-700">₹{service.expressPrice}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Inactive Badge */}
-      {!service.isActive && (
-        <div className="absolute top-3 right-3">
-          <Badge variant="secondary" className="text-xs bg-slate-300 text-slate-700 border border-slate-400 font-semibold">
-            Inactive
-          </Badge>
-        </div>
-      )}
-    </motion.div>
   );
 }

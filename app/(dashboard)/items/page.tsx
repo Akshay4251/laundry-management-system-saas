@@ -75,7 +75,7 @@ import {
     useToggleItem,
 } from '@/app/hooks/use-items';
 import type { Item, ItemCategory, CreateItemInput, UpdateItemInput } from '@/app/types/item';
-import type { Treatment } from '@/app/types/treatment';
+import type { Service } from '@/app/types/service';
 import { ServiceIconDisplay } from '@/components/services/service-icon-display';
 import { ServiceIconPicker } from '@/components/services/service-icon-picker';
 
@@ -120,10 +120,10 @@ interface ItemFormModalProps {
     open: boolean;
     onClose: () => void;
     item: Item | null;
-    treatments: Treatment[];
+    services: Service[];
 }
 
-function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) {
+function ItemFormModal({ open, onClose, item, services }: ItemFormModalProps) {
     const isEditing = !!item;
     const createItem = useCreateItem();
     const updateItem = useUpdateItem();
@@ -136,7 +136,7 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
         isActive: boolean;
         sortOrder: number;
         prices: {
-            treatmentId: string;
+            serviceId: string;
             price: number | null;
             expressPrice: number | null;
             isAvailable: boolean;
@@ -162,9 +162,9 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
                 // Edit mode - populate existing data
                 const pricesMap = new Map(
                     item.prices?.map((p) => [
-                        p.treatmentId,
+                        p.serviceId,
                         {
-                            treatmentId: p.treatmentId,
+                            serviceId: p.serviceId,
                             price: p.price,
                             expressPrice: p.expressPrice,
                             isAvailable: p.isAvailable,
@@ -173,11 +173,11 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
                     ]) || []
                 );
 
-                const allPrices = treatments.map((t) => {
+                const allPrices = services.map((t) => {
                     const existingPrice = pricesMap.get(t.id);
                     return (
                         existingPrice || {
-                            treatmentId: t.id,
+                            serviceId: t.id,
                             price: null,
                             expressPrice: null,
                             isAvailable: true,
@@ -203,8 +203,8 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
                     iconUrl: null,
                     isActive: true,
                     sortOrder: 0,
-                    prices: treatments.map((t) => ({
-                        treatmentId: t.id,
+                    prices: services.map((t) => ({
+                        serviceId: t.id,
                         price: null,
                         expressPrice: null,
                         isAvailable: true,
@@ -214,7 +214,7 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
             }
             setErrors({});
         }
-    }, [open, item, treatments]);
+    }, [open, item, services]);
 
     const handleChange = (field: string, value: any) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -227,11 +227,11 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
         }
     };
 
-    const handlePriceChange = (treatmentId: string, field: string, value: any) => {
+    const handlePriceChange = (serviceId: string, field: string, value: any) => {
         setFormData((prev) => ({
             ...prev,
             prices: prev.prices.map((p) =>
-                p.treatmentId === treatmentId ? { ...p, [field]: value } : p
+                p.serviceId === serviceId ? { ...p, [field]: value } : p
             ),
         }));
     };
@@ -253,7 +253,7 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
                     p.price !== null && p.price > 0 && p.isAvailable
                 )
                 .map((p) => ({
-                    treatmentId: p.treatmentId,
+                    serviceId: p.serviceId,
                     price: p.price, 
                     expressPrice: p.useAuto ? null : p.expressPrice,
                     isAvailable: p.isAvailable,
@@ -289,7 +289,7 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Item' : 'Add New Item'}</DialogTitle>
                     <DialogDescription>
-                        {isEditing ? 'Update item details and pricing' : 'Create a new item with treatment pricing'}
+                        {isEditing ? 'Update item details and pricing' : 'Create a new item with service pricing'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -343,31 +343,31 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
 
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <Label className="text-base font-semibold">Treatment Pricing</Label>
-                            <p className="text-xs text-slate-500">Set prices for each treatment type</p>
+                            <Label className="text-base font-semibold">Service Pricing</Label>
+                            <p className="text-xs text-slate-500">Set prices for each service type</p>
                         </div>
 
                         <div className="border rounded-lg divide-y max-h-[300px] overflow-y-auto">
                             {formData.prices.map((priceData) => {
-                                const treatment = treatments.find((t) => t.id === priceData.treatmentId);
-                                if (!treatment) return null;
+                                const service = services.find((t) => t.id === priceData.serviceId);
+                                if (!service) return null;
 
                                 return (
-                                    <div key={priceData.treatmentId} className="p-4 space-y-3">
+                                    <div key={priceData.serviceId} className="p-4 space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <Switch
                                                     checked={priceData.isAvailable}
                                                     onCheckedChange={(checked) =>
-                                                        handlePriceChange(priceData.treatmentId, 'isAvailable', checked)
+                                                        handlePriceChange(priceData.serviceId, 'isAvailable', checked)
                                                     }
                                                 />
                                                 <div>
-                                                    <p className="font-medium text-sm">{treatment.name}</p>
-                                                    <p className="text-xs text-slate-500">{treatment.turnaroundHours}h turnaround</p>
+                                                    <p className="font-medium text-sm">{service.name}</p>
+                                                    <p className="text-xs text-slate-500">{service.turnaroundHours}h turnaround</p>
                                                 </div>
                                             </div>
-                                            {treatment.isCombo && (
+                                            {service.isCombo && (
                                                 <Badge variant="secondary" className="text-xs">
                                                     Combo
                                                 </Badge>
@@ -386,7 +386,7 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
                                                         value={priceData.price === null ? '' : priceData.price} 
                                                         onChange={(e) =>
                                                             handlePriceChange(
-                                                                priceData.treatmentId,
+                                                                priceData.serviceId,
                                                                 'price',
                                                                 e.target.value ? parseFloat(e.target.value) : null
                                                             )
@@ -408,9 +408,9 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
                                                         }
                                                         value={priceData.useAuto || priceData.expressPrice === null ? '' : priceData.expressPrice}
                                                         onChange={(e) => {
-                                                            handlePriceChange(priceData.treatmentId, 'useAuto', false);
+                                                            handlePriceChange(priceData.serviceId, 'useAuto', false);
                                                             handlePriceChange(
-                                                                priceData.treatmentId,
+                                                                priceData.serviceId,
                                                                 'expressPrice',
                                                                 e.target.value ? parseFloat(e.target.value) : null
                                                             );
@@ -426,7 +426,7 @@ function ItemFormModal({ open, onClose, item, treatments }: ItemFormModalProps) 
                                                             type="checkbox"
                                                             checked={priceData.useAuto}
                                                             onChange={(e) =>
-                                                                handlePriceChange(priceData.treatmentId, 'useAuto', e.target.checked)
+                                                                handlePriceChange(priceData.serviceId, 'useAuto', e.target.checked)
                                                             }
                                                             className="rounded"
                                                         />
@@ -576,7 +576,7 @@ function ItemCard({ item, index, onEdit, onDelete, onToggle }: ItemCardProps) {
 
             <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">Treatments Priced</span>
+                    <span className="text-slate-500 font-medium">Services Priced</span>
                     <Badge variant="secondary" className="text-xs">
                         {item.availablePricesCount || 0} / {item.pricesCount || 0}
                     </Badge>
@@ -585,8 +585,8 @@ function ItemCard({ item, index, onEdit, onDelete, onToggle }: ItemCardProps) {
                 {item.prices && item.prices.length > 0 && (
                     <div className="pt-2 border-t space-y-1">
                         {item.prices.slice(0, 3).map((price) => (
-                            <div key={price.treatmentId} className="flex items-center justify-between text-xs">
-                                <span className="text-slate-600">{price.treatmentName}</span>
+                            <div key={price.serviceId} className="flex items-center justify-between text-xs">
+                                <span className="text-slate-600">{price.serviceName}</span>
                                 <span className="font-semibold text-slate-900">₹{price.price}</span>
                             </div>
                         ))}
@@ -623,7 +623,7 @@ export default function ItemsPage() {
     const [editingItem, setEditingItem] = useState<Item | null>(null);
     const [deletingItem, setDeletingItem] = useState<Item | null>(null);
 
-    const { items, treatments, stats, isLoading, isError, refetch } = useItems({
+    const { items, services, stats, isLoading, isError, refetch } = useItems({
         search: searchQuery,
         category: categoryFilter,
         activeOnly: showActiveOnly,
@@ -921,7 +921,7 @@ export default function ItemsPage() {
                     setEditingItem(null);
                 }}
                 item={editingItem}
-                treatments={treatments}
+                services={services}
             />
             <DeleteItemDialog
                 open={!!deletingItem}

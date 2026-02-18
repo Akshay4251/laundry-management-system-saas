@@ -1,5 +1,4 @@
-// prisma/schema.prisma
-
+//schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -96,9 +95,8 @@ model Business {
   settings       BusinessSettings?
   stores         Store[]
   customers      Customer[]
-  services       Service[]
   items          Item[]
-  treatments     Treatment[]
+  services       Service[]              
   staff          Staff[]
   orders         Order[]
   inventoryItems InventoryItem[]
@@ -165,7 +163,7 @@ model BusinessSettings {
   // Express Pricing Settings
   expressMultiplier Decimal @default(1.5) @map("express_multiplier") @db.Decimal(3, 2)
 
-   // GST Settings
+  // GST Settings
   gstEnabled    Boolean @default(false) @map("gst_enabled")
   gstPercentage Decimal @default(18) @map("gst_percentage") @db.Decimal(5, 2)
 
@@ -234,7 +232,6 @@ model Store {
   // Relations
   orders           Order[]
   orderItems       OrderItem[]
-  storeServices    StoreService[]
   storeItemPrices  StoreItemPrice[]
   staffAssignments StaffAssignment[]
 
@@ -271,19 +268,19 @@ model Customer {
   totalSpent    Decimal   @default(0) @map("total_spent") @db.Decimal(10, 2)
 
   // Customer App Authentication
-  passwordHash     String?   @map("password_hash")
-  isAppEnabled     Boolean   @default(true) @map("is_app_enabled")
-  appRegisteredAt  DateTime? @map("app_registered_at")
-  
+  passwordHash    String?   @map("password_hash")
+  isAppEnabled    Boolean   @default(true) @map("is_app_enabled")
+  appRegisteredAt DateTime? @map("app_registered_at")
+
   // Push Notifications (Expo)
-  expoPushToken    String?   @map("expo_push_token")
-  pushEnabled      Boolean   @default(true) @map("push_enabled")
+  expoPushToken String?  @map("expo_push_token")
+  pushEnabled   Boolean  @default(true) @map("push_enabled")
 
   // Soft Delete
   deletedAt DateTime? @map("deleted_at")
 
   // Relations
-  orders Order[]
+  orders        Order[]
   addresses     CustomerAddress[]
   refreshTokens CustomerRefreshToken[]
 
@@ -319,7 +316,7 @@ model Item {
   deletedAt DateTime? @map("deleted_at")
 
   // Relations
-  prices          ItemTreatmentPrice[]
+  prices          ItemServicePrice[]     
   storeItemPrices StoreItemPrice[]
   orderItems      OrderItem[]
 
@@ -341,10 +338,10 @@ enum ItemCategory {
 }
 
 // ============================================================================
-// TREATMENTS (What you do - Wash, Iron, Dry Clean, etc.)
+// SERVICES (What you do - Wash, Iron, Dry Clean, etc.)
 // ============================================================================
 
-model Treatment {
+model Service {
   id         String   @id @default(cuid())
   businessId String   @map("business_id")
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -354,10 +351,10 @@ model Treatment {
   description String?
   iconUrl     String? @map("icon_url")
 
-  // Is this a combo treatment? (Wash+Iron is combo of Wash and Iron)
+  // Is this a combo? (Wash+Iron is combo of Wash and Iron)
   isCombo Boolean @default(false) @map("is_combo")
 
-  // Default turnaround time for this treatment
+  // Default turnaround time
   turnaroundHours Int @default(24) @map("turnaround_hours")
 
   // Status
@@ -368,24 +365,24 @@ model Treatment {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  prices     ItemTreatmentPrice[]
+  prices     ItemServicePrice[]     
   orderItems OrderItem[]
 
   @@unique([businessId, code])
   @@index([businessId])
   @@index([isActive])
-  @@map("treatments")
+  @@map("services")                  
 }
 
 // ============================================================================
-// ITEM-TREATMENT PRICING (The Matrix!)
+// ITEM-SERVICE PRICING (The Matrix!)
 // ============================================================================
 
-model ItemTreatmentPrice {
-  id          String @id @default(cuid())
-  businessId  String @map("business_id")
-  itemId      String @map("item_id")
-  treatmentId String @map("treatment_id")
+model ItemServicePrice {
+  id         String @id @default(cuid())
+  businessId String @map("business_id")
+  itemId     String @map("item_id")
+  serviceId  String @map("service_id")           
 
   // Pricing
   price        Decimal  @db.Decimal(10, 2)
@@ -398,14 +395,14 @@ model ItemTreatmentPrice {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  item      Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  treatment Treatment @relation(fields: [treatmentId], references: [id], onDelete: Cascade)
+  item    Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)  
 
-  @@unique([businessId, itemId, treatmentId])
+  @@unique([businessId, itemId, serviceId])      
   @@index([itemId])
-  @@index([treatmentId])
+  @@index([serviceId])                           
   @@index([isAvailable])
-  @@map("item_treatment_prices")
+  @@map("item_service_prices")                   
 }
 
 // ============================================================================
@@ -413,10 +410,10 @@ model ItemTreatmentPrice {
 // ============================================================================
 
 model StoreItemPrice {
-  id          String @id @default(cuid())
-  storeId     String @map("store_id")
-  itemId      String @map("item_id")
-  treatmentId String @map("treatment_id")
+  id        String @id @default(cuid())
+  storeId   String @map("store_id")
+  itemId    String @map("item_id")
+  serviceId String @map("service_id")            
 
   // Override pricing for this store
   price        Decimal  @db.Decimal(10, 2)
@@ -430,7 +427,7 @@ model StoreItemPrice {
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
   item  Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@unique([storeId, itemId, treatmentId])
+  @@unique([storeId, itemId, serviceId])         
   @@index([storeId])
   @@index([itemId])
   @@map("store_item_prices")
@@ -459,72 +456,6 @@ model ServiceIcon {
   @@index([isActive])
   @@index([sortOrder])
   @@map("service_icons")
-}
-
-// ============================================================================
-// LEGACY: SERVICES (Keep for backward compatibility during migration)
-// ============================================================================
-
-model Service {
-  id         String   @id @default(cuid())
-  businessId String   @map("business_id")
-  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  name        String
-  description String?
-  category    ItemCategory @default(GARMENT)
-
-  // Icon - Simple Cloudinary URL
-  iconUrl String? @map("icon_url")
-
-  // Pricing
-  basePrice    Decimal  @map("base_price") @db.Decimal(10, 2)
-  expressPrice Decimal? @map("express_price") @db.Decimal(10, 2)
-  unit         String   @default("piece")
-
-  // Processing
-  turnaroundTime Int      @default(24) @map("turnaround_time")
-  serviceTypes   String[] @default([]) @map("service_types")
-
-  // Status
-  isActive  Boolean   @default(true) @map("is_active")
-  deletedAt DateTime? @map("deleted_at")
-
-  // Relations
-  storeServices StoreService[]
-  orderItems    OrderItem[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([businessId])
-  @@index([isActive])
-  @@index([category])
-  @@index([deletedAt])
-  @@map("services")
-}
-
-// ============================================================================
-// LEGACY: STORE SERVICES (Per-Store Pricing Override)
-// ============================================================================
-
-model StoreService {
-  id        String  @id @default(cuid())
-  storeId   String  @map("store_id")
-  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  serviceId String  @map("service_id")
-  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-
-  price       Decimal @db.Decimal(10, 2)
-  isAvailable Boolean @default(true) @map("is_available")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([storeId, serviceId])
-  @@index([storeId])
-  @@index([serviceId])
-  @@map("store_services")
 }
 
 // ============================================================================
@@ -582,20 +513,20 @@ model Order {
   status      OrderStatus @default(IN_PROGRESS)
 
   // Amount Breakdown
-  subtotal    Decimal? @db.Decimal(10, 2)
-  discount    Decimal? @db.Decimal(10, 2)
-  
+  subtotal Decimal? @db.Decimal(10, 2)
+  discount Decimal? @db.Decimal(10, 2)
+
   // GST Fields
   gstEnabled    Boolean  @default(false) @map("gst_enabled")
   gstPercentage Decimal? @map("gst_percentage") @db.Decimal(5, 2)
   gstAmount     Decimal? @map("gst_amount") @db.Decimal(10, 2)
-  
+
   // Legacy tax field (kept for backward compatibility)
-  tax         Decimal? @db.Decimal(10, 2)
-  
+  tax Decimal? @db.Decimal(10, 2)
+
   // Final amounts
-  totalAmount Decimal  @map("total_amount") @db.Decimal(10, 2)
-  paidAmount  Decimal  @default(0) @map("paid_amount") @db.Decimal(10, 2)
+  totalAmount Decimal @map("total_amount") @db.Decimal(10, 2)
+  paidAmount  Decimal @default(0) @map("paid_amount") @db.Decimal(10, 2)
 
   // Payment
   paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
@@ -616,20 +547,20 @@ model Order {
   reworkCount  Int     @default(0) @map("rework_count")
   reworkReason String? @map("rework_reason")
 
-  driverId         String?
-  assignedAt       DateTime?
-  pickedUpAt       DateTime?
-  deliveredAt      DateTime?
-  
+  driverId    String?
+  assignedAt  DateTime?
+  pickedUpAt  DateTime?
+  deliveredAt DateTime?
+
   // Customer Address (for pickup/delivery orders)
-  addressId        String?          @map("address_id")
-  customerAddress  CustomerAddress? @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  addressId       String?          @map("address_id")
+  customerAddress CustomerAddress? @relation(fields: [addressId], references: [id], onDelete: SetNull)
 
   // Relations
   items         OrderItem[]
   payments      Payment[]
   statusHistory OrderStatusHistory[]
-  driver           Driver?   @relation("AssignedDriver", fields: [driverId], references: [id])
+  driver        Driver?             @relation("AssignedDriver", fields: [driverId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -644,6 +575,7 @@ model Order {
   @@index([isRework])
   @@map("orders")
 }
+
 enum OrderType {
   PICKUP
   WALKIN
@@ -679,7 +611,7 @@ enum OrderPriority {
 }
 
 // ============================================================================
-// ORDER ITEMS (Updated to reference Item + Treatment + Legacy Service)
+// ORDER ITEMS
 // ============================================================================
 
 model OrderItem {
@@ -689,24 +621,20 @@ model OrderItem {
   storeId String @map("store_id")
   store   Store  @relation(fields: [storeId], references: [id])
 
-  // NEW: Reference both Item and Treatment
-  itemId      String?    @map("item_id")
-  item        Item?      @relation(fields: [itemId], references: [id])
-  treatmentId String?    @map("treatment_id")
-  treatment   Treatment? @relation(fields: [treatmentId], references: [id])
-
-  // LEGACY: Service reference (for backward compatibility)
-  serviceId String?  @map("service_id")
-  service   Service? @relation(fields: [serviceId], references: [id])
+  // Item and Service references
+  itemId    String?  @map("item_id")
+  item      Item?    @relation(fields: [itemId], references: [id])
+  serviceId String?  @map("service_id")           
+  service   Service? @relation(fields: [serviceId], references: [id])  
 
   // Item Details
-  tagNumber     String  @unique @map("tag_number")
-  itemName      String  @map("item_name")
-  treatmentName String? @map("treatment_name")
-  quantity      Int     @default(1)
-  color         String?
-  brand         String?
-  notes         String?
+  tagNumber   String  @unique @map("tag_number")
+  itemName    String  @map("item_name")
+  serviceName String? @map("service_name")         
+  quantity    Int     @default(1)
+  color       String?
+  brand       String?
+  notes       String?
 
   // Status & Pricing
   status    ItemStatus @default(RECEIVED)
@@ -727,8 +655,7 @@ model OrderItem {
   @@index([orderId])
   @@index([storeId])
   @@index([itemId])
-  @@index([treatmentId])
-  @@index([serviceId])
+  @@index([serviceId])                             
   @@index([tagNumber])
   @@index([status])
   @@index([sentToWorkshop])
@@ -983,22 +910,22 @@ model Subscription {
   // Plan Details
   planType     BusinessPlan @map("plan_type")
   billingCycle BillingCycle @map("billing_cycle")
-  
+
   // Pricing (stored at time of subscription for audit)
-  amount       Decimal @db.Decimal(10, 2)
-  currency     String  @default("INR")
-  
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("INR")
+
   // Razorpay Details
   razorpaySubscriptionId String? @unique @map("razorpay_subscription_id")
   razorpayCustomerId     String? @map("razorpay_customer_id")
-  
+
   // Status & Dates
-  status           SubscriptionStatus @default(ACTIVE)
-  currentPeriodStart DateTime          @map("current_period_start")
-  currentPeriodEnd   DateTime          @map("current_period_end")
-  cancelledAt        DateTime?         @map("cancelled_at")
-  cancelReason       String?           @map("cancel_reason")
-  
+  status             SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime           @map("current_period_start")
+  currentPeriodEnd   DateTime           @map("current_period_end")
+  cancelledAt        DateTime?          @map("cancelled_at")
+  cancelReason       String?            @map("cancel_reason")
+
   // Trial Info
   trialStart DateTime? @map("trial_start")
   trialEnd   DateTime? @map("trial_end")
@@ -1022,15 +949,15 @@ model SubscriptionPayment {
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   // Payment Details
-  amount   Decimal @db.Decimal(10, 2)
-  currency String  @default("INR")
+  amount   Decimal           @db.Decimal(10, 2)
+  currency String            @default("INR")
   status   PaymentStatusType @default(PENDING)
 
   // Razorpay Details
-  razorpayPaymentId  String? @unique @map("razorpay_payment_id")
-  razorpayOrderId    String? @map("razorpay_order_id")
-  razorpaySignature  String? @map("razorpay_signature")
-  
+  razorpayPaymentId String? @unique @map("razorpay_payment_id")
+  razorpayOrderId   String? @map("razorpay_order_id")
+  razorpaySignature String? @map("razorpay_signature")
+
   // Payment Method Info
   paymentMethod String? @map("payment_method")
   cardLast4     String? @map("card_last4")
@@ -1038,10 +965,10 @@ model SubscriptionPayment {
   bank          String?
   wallet        String?
   vpa           String? // UPI VPA
-  
+
   // Metadata
-  description  String?
-  failureCode  String? @map("failure_code")
+  description    String?
+  failureCode    String? @map("failure_code")
   failureMessage String? @map("failure_message")
 
   // Dates
@@ -1067,18 +994,18 @@ model Invoice {
   tax           Decimal @default(0) @db.Decimal(10, 2)
   totalAmount   Decimal @map("total_amount") @db.Decimal(10, 2)
   currency      String  @default("INR")
-  
+
   // Status
   status InvoiceStatus @default(DRAFT)
-  
+
   // Dates
   invoiceDate DateTime  @map("invoice_date")
   dueDate     DateTime  @map("due_date")
   paidAt      DateTime? @map("paid_at")
-  
+
   // PDF Storage
   pdfUrl String? @map("pdf_url")
-  
+
   // Razorpay
   razorpayInvoiceId String? @unique @map("razorpay_invoice_id")
 
@@ -1138,7 +1065,7 @@ model CustomerAddress {
   longitude   Float?
 
   isDefault Boolean @default(false) @map("is_default")
-  orders Order[]
+  orders    Order[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1196,23 +1123,25 @@ model BusinessOperatingHours {
   @@map("business_operating_hours")
 }
 
-// ==================== DRIVER MODELS ====================
+// ============================================================================
+// DRIVER MODELS
+// ============================================================================
 
 model Driver {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   businessId   String
   phone        String
   passwordHash String
   fullName     String
   email        String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
-  business      Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  refreshTokens DriverRefreshToken[]
-  assignedOrders Order[]             @relation("AssignedDriver")
+  business       Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  refreshTokens  DriverRefreshToken[]
+  assignedOrders Order[]              @relation("AssignedDriver")
 
   @@unique([businessId, phone])
   @@index([businessId])

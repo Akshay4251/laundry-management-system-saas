@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const businessId = driver.businessId;
 
-    const [items, treatments] = await Promise.all([
+    const [items, services] = await Promise.all([
       prisma.item.findMany({
         where: {
           businessId,
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
           prices: {
             where: { isAvailable: true },
             include: {
-              treatment: {
+              service: {
                 select: { id: true, name: true, code: true },
               },
             },
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
         },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
-      prisma.treatment.findMany({
+      prisma.service.findMany({
         where: { businessId, isActive: true },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
@@ -49,16 +49,16 @@ export async function GET(req: NextRequest) {
       category: item.category,
       iconUrl: item.iconUrl,
       prices: item.prices.map((p) => ({
-        treatmentId: p.treatmentId,
-        treatmentName: p.treatment.name,
-        treatmentCode: p.treatment.code,
+        serviceId: p.serviceId,
+        serviceName: p.service.name,
+        serviceCode: p.service.code,
         price: parseFloat(p.price.toString()),
         expressPrice: p.expressPrice ? parseFloat(p.expressPrice.toString()) : null,
         isAvailable: p.isAvailable,
       })),
     }));
 
-    const transformedTreatments = treatments.map((t) => ({
+    const transformedServices = services.map((t) => ({
       id: t.id,
       name: t.name,
       code: t.code,
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
 
     return driverApiResponse.success({
       items: transformedItems,
-      treatments: transformedTreatments,
+      services: transformedServices,
     });
   } catch (error) {
     console.error('Get items error:', error);

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       include: {
         prices: {
           include: {
-            treatment: {
+            service: {
               select: { id: true, name: true, code: true, turnaroundHours: true },
             },
           },
@@ -43,8 +43,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       return apiResponse.notFound('Item not found');
     }
 
-    // Get all treatments to show full pricing matrix
-    const allTreatments = await prisma.treatment.findMany({
+    // Get all services to show full pricing matrix
+    const allServices = await prisma.service.findMany({
       where: { businessId, isActive: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
@@ -60,13 +60,13 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       usageCount: item._count.orderItems,
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString(),
-      prices: allTreatments.map((treatment) => {
-        const priceEntry = item.prices.find((p) => p.treatmentId === treatment.id);
+      prices: allServices.map((service) => {
+        const priceEntry = item.prices.find((p) => p.serviceId === service.id);
         return {
-          treatmentId: treatment.id,
-          treatmentName: treatment.name,
-          treatmentCode: treatment.code,
-          turnaroundHours: treatment.turnaroundHours,
+          serviceId: service.id,
+          serviceName: service.name,
+          serviceCode: service.code,
+          turnaroundHours: service.turnaroundHours,
           price: priceEntry ? parseFloat(priceEntry.price.toString()) : null,
           expressPrice: priceEntry?.expressPrice
             ? parseFloat(priceEntry.expressPrice.toString())
@@ -143,16 +143,16 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       if (prices && Array.isArray(prices)) {
         for (const p of prices) {
           if (p.price === null || p.price === undefined) {
-            await tx.itemTreatmentPrice.deleteMany({
-              where: { businessId, itemId: id, treatmentId: p.treatmentId },
+            await tx.itemServicePrice.deleteMany({
+              where: { businessId, itemId: id, serviceId: p.serviceId },
             });
           } else {
-            await tx.itemTreatmentPrice.upsert({
+            await tx.itemServicePrice.upsert({
               where: {
-                businessId_itemId_treatmentId: {
+                businessId_itemId_serviceId: {
                   businessId,
                   itemId: id,
-                  treatmentId: p.treatmentId,
+                  serviceId: p.serviceId,
                 },
               },
               update: {
@@ -163,7 +163,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
               create: {
                 businessId,
                 itemId: id,
-                treatmentId: p.treatmentId,
+                serviceId: p.serviceId,
                 price: p.price,
                 expressPrice: p.expressPrice || null,
                 isAvailable: p.isAvailable ?? true,
@@ -226,7 +226,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     }
 
     await prisma.$transaction([
-      prisma.itemTreatmentPrice.deleteMany({ where: { itemId: id } }),
+      prisma.itemServicePrice.deleteMany({ where: { itemId: id } }),
       prisma.item.delete({ where: { id } }),
     ]);
 

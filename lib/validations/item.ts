@@ -2,9 +2,9 @@
 
 import { z } from 'zod';
 
-// Price entry for a single treatment
-const treatmentPriceSchema = z.object({
-  treatmentId: z.string().min(1, 'Treatment ID is required'),
+// Price entry for a single service
+const servicePriceSchema = z.object({
+  serviceId: z.string().min(1, 'Service ID is required'),
   price: z.number().positive('Price must be greater than 0'),
   expressPrice: z.number().positive().optional().nullable(),
   isAvailable: z.boolean().default(true),
@@ -19,7 +19,7 @@ export const createItemSchema = z.object({
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().default(0),
   // Inline pricing - set prices while creating item
-  prices: z.array(treatmentPriceSchema).optional().default([]),
+  prices: z.array(servicePriceSchema).optional().default([]),
 });
 
 // Update item with inline pricing
@@ -31,12 +31,12 @@ export const updateItemSchema = z.object({
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
   // Inline pricing updates
-  prices: z.array(treatmentPriceSchema).optional(),
+  prices: z.array(servicePriceSchema).optional(),
 });
 
 // Bulk update prices for an item
 export const updateItemPricesSchema = z.object({
-  prices: z.array(treatmentPriceSchema).min(1, 'At least one price is required'),
+  prices: z.array(servicePriceSchema).min(1, 'At least one price is required'),
 });
 
 export type CreateItemInput = z.infer<typeof createItemSchema>;

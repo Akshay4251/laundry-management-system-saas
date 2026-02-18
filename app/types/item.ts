@@ -2,10 +2,10 @@
 
 export type ItemCategory = 'GARMENT' | 'HOUSEHOLD' | 'SPECIALTY';
 
-export interface TreatmentPrice {
-  treatmentId: string;
-  treatmentName: string;
-  treatmentCode: string;
+export interface ServicePrice {
+  serviceId: string;
+  serviceName: string;
+  serviceCode: string;
   price: number | null;
   expressPrice: number | null;
   isAvailable: boolean;
@@ -21,14 +21,14 @@ export interface Item {
   sortOrder: number;
   createdAt?: string;
   updatedAt?: string;
-  prices?: TreatmentPrice[];
+  prices?: ServicePrice[];
   pricesCount?: number;
   availablePricesCount?: number;
   usageCount?: number;
 }
 
 export interface ItemWithPricing extends Item {
-  prices: TreatmentPrice[];
+  prices: ServicePrice[];
 }
 
 export interface ItemStats {
@@ -55,7 +55,7 @@ export interface CreateItemInput {
   isActive?: boolean;
   sortOrder?: number;
   prices?: {
-    treatmentId: string;
+    serviceId: string;
     price: number;
     expressPrice?: number | null;
     isAvailable?: boolean;
@@ -70,7 +70,7 @@ export interface UpdateItemInput {
   isActive?: boolean;
   sortOrder?: number;
   prices?: {
-    treatmentId: string;
+    serviceId: string;
     price: number;
     expressPrice?: number | null;
     isAvailable?: boolean;

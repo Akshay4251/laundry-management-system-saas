@@ -1,6 +1,6 @@
-// app/types/treatment.ts
+// app/types/service.ts
 
-export interface Treatment {
+export interface Service {
   id: string;
   name: string;
   code: string;
@@ -17,21 +17,21 @@ export interface Treatment {
   usageCount?: number;
 }
 
-export interface TreatmentStats {
+export interface ServiceStats {
   total: number;
   active: number;
   inactive: number;
   combo: number;
 }
 
-export interface TreatmentFilters {
+export interface ServiceFilters {
   search?: string;
   activeOnly?: boolean;
   page?: number;
   limit?: number;
 }
 
-export interface CreateTreatmentInput {
+export interface CreateServiceInput {
   name: string;
   code?: string;
   description?: string | null;
@@ -42,7 +42,7 @@ export interface CreateTreatmentInput {
   sortOrder?: number;
 }
 
-export interface UpdateTreatmentInput {
+export interface UpdateServiceInput {
   name?: string;
   code?: string;
   description?: string | null;

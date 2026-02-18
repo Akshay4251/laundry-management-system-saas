@@ -7,7 +7,7 @@ import { apiResponse, createPagination, handlePrismaError } from '@/lib/api-resp
 import { Prisma, ItemCategory } from '@prisma/client';
 
 // ============================================================================
-// GET /api/items - List all items with treatment prices
+// GET /api/items - List all items with service prices
 // ============================================================================
 export async function GET(req: NextRequest) {
   try {
@@ -47,14 +47,14 @@ export async function GET(req: NextRequest) {
       where.isActive = true;
     }
 
-    // Fetch items with prices and treatments
-    const [items, total, treatments] = await Promise.all([
+    // Fetch items with prices and services
+    const [items, total, services] = await Promise.all([
       prisma.item.findMany({
         where,
         include: {
           prices: {
             include: {
-              treatment: {
+              service: {
                 select: {
                   id: true,
                   name: true,
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
         take: limit,
       }),
       prisma.item.count({ where }),
-      prisma.treatment.findMany({
+      prisma.service.findMany({
         where: { businessId, isActive: true },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
@@ -114,12 +114,12 @@ export async function GET(req: NextRequest) {
       usageCount: item._count.orderItems,
       pricesCount: item.prices.length,
       availablePricesCount: item.prices.filter((p) => p.isAvailable).length,
-      prices: treatments.map((treatment) => {
-        const priceEntry = item.prices.find((p) => p.treatmentId === treatment.id);
+      prices: services.map((service) => {
+        const priceEntry = item.prices.find((p) => p.serviceId === service.id);
         return {
-          treatmentId: treatment.id,
-          treatmentName: treatment.name,
-          treatmentCode: treatment.code,
+          serviceId: service.id,
+          serviceName: service.name,
+          serviceCode: service.code,
           price: priceEntry ? parseFloat(priceEntry.price.toString()) : null,
           expressPrice: priceEntry?.expressPrice
             ? parseFloat(priceEntry.expressPrice.toString())
@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
 
     return apiResponse.success({
       items: transformedItems,
-      treatments: treatments.map((t) => ({
+      services: services.map((t) => ({
         id: t.id,
         name: t.name,
         code: t.code,
@@ -198,11 +198,11 @@ export async function POST(req: NextRequest) {
 
       // Create prices if provided
       if (prices && Array.isArray(prices) && prices.length > 0) {
-        await tx.itemTreatmentPrice.createMany({
+        await tx.itemServicePrice.createMany({
           data: prices.map((p: any) => ({
             businessId,
             itemId: newItem.id,
-            treatmentId: p.treatmentId,
+            serviceId: p.serviceId,
             price: p.price,
             expressPrice: p.expressPrice || null,
             isAvailable: p.isAvailable ?? true,
@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
       include: {
         prices: {
           include: {
-            treatment: {
+            service: {
               select: { id: true, name: true, code: true },
             },
           },
@@ -237,8 +237,8 @@ export async function POST(req: NextRequest) {
         isActive: completeItem!.isActive,
         sortOrder: completeItem!.sortOrder,
         prices: completeItem!.prices.map((p) => ({
-          treatmentId: p.treatmentId,
-          treatmentName: p.treatment.name,
+          serviceId: p.serviceId,
+          serviceName: p.service.name,
           price: parseFloat(p.price.toString()),
           expressPrice: p.expressPrice ? parseFloat(p.expressPrice.toString()) : null,
           isAvailable: p.isAvailable,

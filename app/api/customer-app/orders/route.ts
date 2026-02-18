@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
             select: {
               id: true,
               itemName: true,
-              treatmentName: true,
+              serviceName: true,
               quantity: true,
               status: true,
               unitPrice: true,
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
       items: order.items.map((item) => ({
         id: item.id,
         itemName: item.itemName,
-        treatmentName: item.treatmentName,
+        serviceName: item.serviceName,
         quantity: item.quantity,
         status: item.status,
         unitPrice: parseFloat(item.unitPrice.toString()),

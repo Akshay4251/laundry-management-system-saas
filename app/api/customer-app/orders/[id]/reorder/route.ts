@@ -40,7 +40,7 @@ export async function POST(
         items: {
           select: {
             itemName: true,
-            treatmentName: true,
+            serviceName: true,
             quantity: true,
           },
         },
@@ -67,7 +67,7 @@ export async function POST(
 
     // Create items summary
     const itemsSummary = originalOrder.items
-      .map((item) => `${item.quantity}x ${item.itemName}${item.treatmentName ? ` (${item.treatmentName})` : ''}`)
+      .map((item) => `${item.quantity}x ${item.itemName}${item.serviceName ? ` (${item.serviceName})` : ''}`)
       .join(', ');
 
     // ═══════════════════════════════════════════════════════════════════════

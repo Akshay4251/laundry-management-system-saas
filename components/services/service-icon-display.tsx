@@ -1,3 +1,4 @@
+//components/services/service-icon-display.tsx
 'use client';
 
 import Image from 'next/image';

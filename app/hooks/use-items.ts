@@ -12,7 +12,7 @@ import type {
   CreateItemInput, 
   UpdateItemInput 
 } from '@/app/types/item';
-import type { Treatment } from '@/app/types/treatment';
+import type { Service } from '@/app/types/service';
 
 // ============================================================================
 // Query Keys
@@ -32,7 +32,7 @@ export const itemKeys = {
 
 interface UseItemsReturn {
   items: Item[];
-  treatments: Treatment[];
+  services: Service[];
   stats: ItemStats | undefined;
   pagination: {
     total: number;
@@ -80,7 +80,7 @@ export function useItems(filters: ItemFilters = {}): UseItemsReturn {
 
   return {
     items: (query.data?.data?.items || []) as Item[],
-    treatments: (query.data?.data?.treatments || []) as Treatment[],
+    services: (query.data?.data?.services || []) as Service[],
     stats: query.data?.data?.stats as ItemStats | undefined,
     pagination: query.data?.data?.pagination,
     isLoading: query.isLoading,

@@ -323,7 +323,7 @@ function getDefaultStatusNote(from: OrderStatus, to: OrderStatus): string {
     'READY->OUT_FOR_DELIVERY': 'Order dispatched for home delivery',
     'READY->COMPLETED': 'Customer picked up order from store',
     'READY->IN_PROGRESS': 'Order sent back for additional processing',
-    'READY->AT_WORKSHOP': 'Order sent to workshop for special treatment',
+    'READY->AT_WORKSHOP': 'Order sent to workshop for special service',
     'READY->CANCELLED': 'Order cancelled before delivery',
     'OUT_FOR_DELIVERY->COMPLETED': 'Order successfully delivered to customer',
     'OUT_FOR_DELIVERY->READY': 'Delivery attempt failed, order returned to store',

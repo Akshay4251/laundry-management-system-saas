@@ -6,7 +6,7 @@
 // Re-export all types from specialized files
 export * from './order';
 export * from './item';
-export * from './treatment';
+export * from './service';
 export * from './customer';
 export * from './notification';
 export * from './settings';

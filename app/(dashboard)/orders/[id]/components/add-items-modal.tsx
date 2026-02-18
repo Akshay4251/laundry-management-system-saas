@@ -71,7 +71,7 @@ export function AddItemsModal({
 }: AddItemsModalProps) {
   // State
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTreatmentId, setSelectedTreatmentId] = useState<string | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<CartOrderItem[]>([]);
   const [isExpress, setIsExpress] = useState(order.priority === 'EXPRESS');
   
@@ -87,17 +87,17 @@ export function AddItemsModal({
   const needsDeliveryDate = !order.deliveryDate;
 
   // Hooks
-  const { items, treatments, isLoading: itemsLoading } = useItems({ activeOnly: true });
+  const { items, services, isLoading: itemsLoading } = useItems({ activeOnly: true });
   const { mutateAsync: addItems, isPending: isAdding } = useAddOrderItems();
 
   const EXPRESS_MULTIPLIER = 1.5;
 
-  // Auto-select first treatment
+  // Auto-select first service
   useEffect(() => {
-    if (treatments.length > 0 && !selectedTreatmentId) {
-      setSelectedTreatmentId(treatments[0].id);
+    if (services.length > 0 && !selectedServiceId) {
+      setSelectedServiceId(services[0].id);
     }
-  }, [treatments, selectedTreatmentId]);
+  }, [services, selectedServiceId]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -124,19 +124,19 @@ export function AddItemsModal({
   // HANDLERS
   // ============================================================================
 
-  const activeTreatment = treatments.find(t => t.id === selectedTreatmentId);
+  const activeService = services.find(t => t.id === selectedServiceId);
 
   const toggleItem = (item: Item) => {
-    if (!selectedTreatmentId || !activeTreatment) return;
+    if (!selectedServiceId || !activeService) return;
 
-    const priceEntry = item.prices?.find(p => p.treatmentId === selectedTreatmentId);
+    const priceEntry = item.prices?.find(p => p.serviceId === selectedServiceId);
     
     if (!priceEntry || !priceEntry.isAvailable) {
-      toast.error(`${item.name} not available for ${activeTreatment.name}`);
+      toast.error(`${item.name} not available for ${activeService.name}`);
       return;
     }
 
-    const cartKey = `${item.id}-${selectedTreatmentId}`;
+    const cartKey = `${item.id}-${selectedServiceId}`;
     const existingIndex = cartItems.findIndex(ci => ci.cartKey === cartKey);
 
     if (existingIndex > -1) {
@@ -147,9 +147,9 @@ export function AddItemsModal({
         {
           cartKey,
           id: item.id,
-          treatmentId: selectedTreatmentId,
+          serviceId: selectedServiceId,
           name: item.name,
-          treatmentName: activeTreatment.name,
+          serviceName: activeService.name,
           quantity: 1,
           price: priceEntry.price || 0,
           iconUrl: item.iconUrl,
@@ -187,7 +187,7 @@ export function AddItemsModal({
         orderId: order.id,
         items: cartItems.map(item => ({
           itemId: item.id,
-          treatmentId: item.treatmentId,
+          serviceId: item.serviceId,
           quantity: item.quantity,
           unitPrice: item.price,
           expressPrice: isExpress ? Math.round(item.price * EXPRESS_MULTIPLIER) : null,
@@ -337,15 +337,15 @@ export function AddItemsModal({
             )}
           </div>
 
-          {/* Treatment Tabs */}
+          {/* Service Tabs */}
           <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-            {treatments.map((t) => (
+            {services.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setSelectedTreatmentId(t.id)}
+                onClick={() => setSelectedServiceId(t.id)}
                 className={cn(
                   "flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all",
-                  selectedTreatmentId === t.id
+                  selectedServiceId === t.id
                     ? "bg-blue-600 border-blue-600 text-white"
                     : "bg-white border-slate-200 text-slate-600 hover:border-blue-300"
                 )}
@@ -363,9 +363,9 @@ export function AddItemsModal({
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {filteredItems.map((item) => {
-                const priceEntry = item.prices?.find(p => p.treatmentId === selectedTreatmentId);
+                const priceEntry = item.prices?.find(p => p.serviceId === selectedServiceId);
                 const isAvailable = priceEntry?.isAvailable ?? false;
-                const cartKey = selectedTreatmentId ? `${item.id}-${selectedTreatmentId}` : '';
+                const cartKey = selectedServiceId ? `${item.id}-${selectedServiceId}` : '';
                 const cartItem = cartItems.find(ci => ci.cartKey === cartKey);
                 const isSelected = !!cartItem;
                 const quantity = cartItem?.quantity || 0;

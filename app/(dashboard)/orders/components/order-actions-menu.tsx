@@ -540,9 +540,9 @@ export function OrderActionsMenu({ order }: OrderActionsMenuProps) {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-medium text-slate-900">{item.itemName}</p>
-                                {item.treatmentName && (
+                                {item.serviceName && (
                                   <Badge variant="outline" className="text-xs">
-                                    {item.treatmentName}
+                                    {item.serviceName}
                                   </Badge>
                                 )}
                                 {item.isExpress && (

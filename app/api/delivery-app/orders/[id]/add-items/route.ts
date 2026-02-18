@@ -11,7 +11,7 @@ export async function OPTIONS() {
 
 interface AddItemInput {
   itemId: string;
-  treatmentId: string;
+  serviceId: string;
   quantity: number;
   unitPrice: number;
 }
@@ -52,16 +52,16 @@ export async function POST(
       return driverApiResponse.notFound('Order not found or not in PICKUP status');
     }
 
-    // Validate items and treatments
+    // Validate items and services
     const itemIds = [...new Set(items.map((i) => i.itemId))];
-    const treatmentIds = [...new Set(items.map((i) => i.treatmentId))];
+    const serviceIds = [...new Set(items.map((i) => i.serviceId))];
 
-    const [dbItems, dbTreatments, businessSettings] = await Promise.all([
+    const [dbItems, dbServices, businessSettings] = await Promise.all([
       prisma.item.findMany({
         where: { id: { in: itemIds }, businessId: driver.businessId, isActive: true, deletedAt: null },
       }),
-      prisma.treatment.findMany({
-        where: { id: { in: treatmentIds }, businessId: driver.businessId, isActive: true },
+      prisma.service.findMany({
+        where: { id: { in: serviceIds }, businessId: driver.businessId, isActive: true },
       }),
       prisma.businessSettings.findUnique({
         where: { businessId: driver.businessId },
@@ -69,14 +69,14 @@ export async function POST(
     ]);
 
     const itemMap = new Map(dbItems.map((i) => [i.id, i]));
-    const treatmentMap = new Map(dbTreatments.map((t) => [t.id, t]));
+    const serviceMap = new Map(dbServices.map((t) => [t.id, t]));
 
     for (const item of items) {
       if (!itemMap.has(item.itemId)) {
         return driverApiResponse.error(`Item not found: ${item.itemId}`);
       }
-      if (!treatmentMap.has(item.treatmentId)) {
-        return driverApiResponse.error(`Treatment not found: ${item.treatmentId}`);
+      if (!serviceMap.has(item.serviceId)) {
+        return driverApiResponse.error(`Service not found: ${item.serviceId}`);
       }
       if (item.quantity < 1) {
         return driverApiResponse.error('Quantity must be at least 1');
@@ -127,7 +127,7 @@ export async function POST(
       const createdItems = await Promise.all(
         items.map(async (item, index) => {
           const dbItem = itemMap.get(item.itemId)!;
-          const dbTreatment = treatmentMap.get(item.treatmentId)!;
+          const dbService = serviceMap.get(item.serviceId)!;
           const tagNumber = `${order.orderNumber}-${(existingItemCount + index + 1).toString().padStart(3, '0')}`;
           const price = isExpress ? Math.round(item.unitPrice * expressMultiplier) : item.unitPrice;
 
@@ -136,10 +136,10 @@ export async function POST(
               orderId: order.id,
               storeId: order.storeId,
               itemId: item.itemId,
-              treatmentId: item.treatmentId,
+              serviceId: item.serviceId,
               tagNumber,
               itemName: dbItem.name,
-              treatmentName: dbTreatment.name,
+              serviceName: dbService.name,
               quantity: item.quantity,
               status: 'RECEIVED',
               unitPrice: item.unitPrice,

@@ -97,7 +97,7 @@ const MENU_SECTIONS: MenuSection[] = [
       { icon: UserCircle, label: 'Customers', href: '/customers' },
       { icon: ClipboardList, label: 'Inventory', href: '/inventory' },
       { icon: Package, label: 'Items & Pricing', href: '/items' },
-      { icon: Wrench, label: 'Treatments', href: '/treatments' },
+      { icon: Wrench, label: 'Services', href: '/services' },
       { icon: IndianRupee, label: 'Expenses', href: '/expenses' },
       { icon: Calendar, label: 'Calendar', href: '/calendar' },
     ],

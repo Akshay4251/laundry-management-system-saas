@@ -61,7 +61,7 @@ export async function GET(
           select: {
             id: true,
             itemName: true,
-            treatmentName: true,
+            serviceName: true,
             quantity: true,
             unitPrice: true,
             subtotal: true,
@@ -100,7 +100,7 @@ export async function GET(
       items: order.items.map((item) => ({
         id: item.id,
         itemName: item.itemName,
-        treatmentName: item.treatmentName,
+        serviceName: item.serviceName,
         quantity: item.quantity,
         unitPrice: item.unitPrice.toString(),
         subtotal: item.subtotal.toString(),

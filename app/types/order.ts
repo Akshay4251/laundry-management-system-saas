@@ -451,9 +451,9 @@ export function getInitialStatus(orderType: OrderType): OrderStatus {
 export interface CartOrderItem {
   cartKey: string;
   id: string;
-  treatmentId: string;
+  serviceId: string;
   name: string;
-  treatmentName: string;
+  serviceName: string;
   quantity: number;
   price: number;
   expressPrice?: number;
@@ -500,6 +500,20 @@ export interface OrderAddress {
 }
 
 // ============================================================================
+// BUSINESS TYPE (For invoice/printing)
+// ============================================================================
+
+export interface OrderBusiness {
+  id: string;
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  logoUrl?: string | null;
+  gstNumber?: string | null;
+}
+
+// ============================================================================
 // API RESPONSE TYPES
 // ============================================================================
 
@@ -517,9 +531,9 @@ export interface OrderItemDetail {
   itemName: string;
   itemIcon?: string | null;
   itemCategory?: string;
-  treatmentId: string | null;
-  treatmentName: string | null;
-  treatmentCode?: string;
+  serviceId: string | null;
+  serviceName: string | null;
+  serviceCode?: string;
   turnaroundHours?: number;
   quantity: number;
   unitPrice: number;
@@ -631,6 +645,9 @@ export interface Order {
 }
 
 export interface OrderDetail extends Order {
+  // ✅ ADDED: Business info for invoice/printing
+  business: OrderBusiness;
+
   items: OrderItemDetail[];
   payments: OrderPayment[];
   statusHistory: OrderStatusHistoryItem[];
@@ -689,7 +706,7 @@ export interface WorkshopItem {
   itemName: string;
   itemIcon: string | null;
   itemCategory: string | null;
-  treatmentName: string | null;
+  serviceName: string | null;
   quantity: number;
   status: ItemStatus;
   isExpress: boolean;
