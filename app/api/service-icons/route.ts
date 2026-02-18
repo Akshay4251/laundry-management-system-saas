@@ -4,8 +4,8 @@ import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { apiResponse } from '@/lib/api-response';
-import { createServiceIconSchema } from '@/lib/validations/service';
-import { ItemCategory } from '@prisma/client'; // ✅ CHANGED
+import { createServiceIconSchema } from '@/lib/validations/service-icon';
+import { ItemCategory } from '@prisma/client'; 
 
 // ============================================================================
 // GET /api/service-icons - Get predefined icons library
